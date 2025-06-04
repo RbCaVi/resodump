@@ -1,0 +1,458 @@
+<html>
+  <head>
+		<script type = "text/javascript" src = "gl-matrix.js"></script>
+		<script type = "text/javascript" src = "mesh.js"></script>
+    <style type = "text/css">
+			.transform {
+				margin: 3px;
+			}
+			
+			.list {
+				margin: 3px;
+				padding: 3px 1px 3px 3px;
+				border: 1px solid black;
+				border-radius: 3px;
+			}
+			
+			.list > .element {
+				margin: 3px;
+				padding: 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+			}
+			
+			.list > .label {
+				margin: 3px;
+			}
+			
+			.inline-center {
+				display: inline-flex;
+				flex-direction: row;
+				flex-wrap: nowrap;
+				align-items: center;
+			}
+			
+			.transform {
+				margin: 1px;
+				padding: 3px 1px 3px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+			}
+			
+			.inline-collapsible > .button {
+				margin: 1px;
+				padding: 1px 2px 1px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+				font-size: 0.8em;
+			}
+			
+			.inline-collapsible > .button:before {
+				content: '\25B7'; /* Unicode character for "plus" sign (+) */
+			}
+			
+			.inline-collapsible.open > .button:before {
+				content: '\25C1'; /* Unicode character for "plus" sign (+) */
+			}
+			
+			.inline-collapsible > .inner {
+				display: none;
+			}
+			
+			.inline-collapsible.open > .inner {
+				display: inline;
+			}
+			
+			.tag {
+				font-size: 0.8em;
+				margin: 3px;
+			}
+			
+			.tag.null {
+				color: grey;
+			}
+			
+			.name {
+				margin: 3px;
+			}
+			
+			.collapsible > .button {
+				margin: 1px;
+				padding: 1px 1px 1px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+				font-size: 0.8em;
+			}
+			
+			.collapsible > .button:before {
+				content: '\25BD'; /* Unicode character for "plus" sign (+) */
+			}
+			
+			.collapsible.open > .button:before {
+				content: '\25B3'; /* Unicode character for "plus" sign (+) */
+			}
+			
+			.collapsible > .inner {
+				display: none;
+			}
+			
+			.collapsible.open > .inner {
+				display: block;
+				margin-left: 2em;
+			}
+			
+			.object-inner {
+				margin: 1px;
+				padding: 1px 1px 1px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+				text-wrap-mode: nowrap;
+			}
+			
+			.object {
+				display: flex;
+				flex-direction: row;
+				flex-wrap: nowrap;
+				align-items: start;
+			}
+			
+			.component {
+				margin: 1px;
+				padding: 1px 1px 3px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+				text-wrap-mode: nowrap;
+			}
+			
+			.idlink {
+				border: 1px solid black;
+				border-radius: 3px;
+				text-wrap-mode: nowrap;
+				background-color: #eee;
+			}
+			
+			.number {
+				width: 1.2em;
+				display: inline-block;
+			}
+			
+			.image {
+				border: 12px solid black;
+				border-radius: 15px;
+			}
+			
+			.image:hover {
+				background-color: #eee;
+				border-color: #888;
+			}
+			
+			.asset {
+				margin: 1px;
+				padding: 1px 1px 3px 1px;
+				border: 1px solid black;
+				border-radius: 3px;
+				text-wrap-mode: nowrap;
+				display: inline-block;
+			}
+			
+			.asset-image {
+				height: 1em;
+				border: 1px solid black;
+				border-radius: 3px;
+				background-color: #eee;
+			}
+			
+			.meshrender {
+				width: 200px;
+				height: 200px;
+				border: 1px solid black;
+				border-radius: 3px;
+				background-color: #eee;
+			}
+    </style>
+  </head>
+  <body>
+		<div id = "container" style = "display: inline-block"></div>
+  </body>
+  <script>
+    function element(type, attrs = {}, ...parts) {
+      const e = document.createElement(type);
+
+      if ("classes" in attrs) {
+        for (const c of attrs.classes) {
+          e.classList.add(c);
+        }
+      }
+
+      if ("class_" in attrs) {
+        e.classList.add(attrs.class_);
+      }
+
+      if ("events" in attrs) {
+        for (const event in attrs.events) {
+          e.addEventListener(event, attrs.events[event]);
+        }
+      }
+
+      if ("text" in attrs) {
+        e.textContent = attrs.text;
+      }
+      
+      const copied = ['id', 'style', 'type', 'src', 'width', 'height', 'href', 'target', 'rel', 'title', 'controls'];
+      for (const prop of copied) {
+        if (prop in attrs) {
+          e[prop] = attrs[prop];
+        }
+      }
+
+      for (const part of parts) {
+        e.append(part);
+      }
+
+      return e;
+    }
+		
+		function asrtf(s, options) {
+			const e = element('span', options);
+			e.innerHTML = s.replace(/<\s*color\s*=([^>]*)\s*>/g, '<span style = "color: $1">').replace(/<\/color>/g, '</span>');
+			return e;
+		}
+		
+		function span(s, options) {
+			return element('span', options, s);
+		}
+		
+		function fmt(x) {
+			if (typeof x == 'number') {
+				return x.toLocaleString(undefined, {
+					maximumFractionDigits: 2,
+				});
+			}
+			return '' + x;
+		}
+
+    fetch("tree.json")
+		.then(r => r.text())
+		.then(text => text.replace(/:\s*Infinity/g,":1e1000").replace(/Infinity\s*,/g,"1e1000,")) // python json encoder....
+		.then(JSON.parse)
+		.then(tree => {
+      // now what lmao
+			const idpaths = {};
+			
+			function walkforids(tree, path = []) {
+				if (tree === null) {
+					return;
+				}
+				if (Array.isArray(tree)) {
+					tree.forEach((subtree, i) => walkforids(subtree, path.concat([i])));
+				} else if (typeof tree == 'object') {
+					if ('ID' in tree) {
+						idpaths[tree.ID] = path;
+					}
+					Object.entries(tree).forEach(([k, subtree]) => walkforids(subtree, path.concat([k])));
+				}
+			}
+			
+			const idusages = {};
+			
+			function walkforidusages(tree, path = []) {
+				if (tree === null) {
+					return;
+				}
+				if (Array.isArray(tree)) {
+					tree.forEach((subtree, i) => walkforidusages(subtree, path.concat([i])));
+				} else if (typeof tree == 'object') {
+					Object.entries(tree).forEach(([k, subtree]) => walkforidusages(subtree, path.concat([k])));
+				} else if (typeof tree == 'string') {
+					if (tree.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)) {
+						if (path.at(-1).endsWith('ID')) {
+							return;
+						}
+						if (path.at(-1) == 'ParentReference') { // what is a "parent reference" for anyway // they seem to never be used?
+							return;
+						}
+						((tree in idusages) ? idusages[tree] : (idusages[tree] = [])).push(path);
+					}
+				}
+			}
+			
+			walkforids(tree);
+			walkforidusages(tree);
+			
+			window.idpaths = idpaths;
+			window.idusages = idusages;
+			
+      window.tree = tree
+			
+			function renderlist(name, l) {
+				return element('span', {class_: 'list'},
+					span(name, {class_: 'label'}),
+					...l.map(e => span(fmt(e), {class_: 'element'}))
+				);
+			}
+			
+			function rendertransform(o) {
+				const container = element('span', {classes: ['transform', 'inline-collapsible', 'inline-center']},
+					span('Transform', {class_: 'transform-label'}),
+					element('span', {events: {click: () => container.classList.toggle('open')}, class_: 'button'}),
+					element('span', {class_: 'inner'},
+						renderlist('Position', o.Position.Data),
+						renderlist('Rotation', o.Rotation.Data),
+						renderlist('Scale', o.Scale.Data),
+					)
+				);
+				return container;
+			}
+			
+			function renderpath(path) {
+				path = [...path]; // copy path so i can .shift() it
+				const first = path.shift();
+				if (first == 'Object') {
+					let current = tree.Object;
+					let rendered = current.Name.Data.replace(/<[^>]*>/g, '');
+					let k;
+					while ((k = path.shift()) == 'Children') {
+						current = current.Children[path.shift()];
+						rendered += ' -> ' + current.Name.Data.replace(/<[^>]*>/g, '');
+					}
+					if (k == undefined) {
+						return rendered;
+					}
+					path.unshift(k);
+					rendered += ' -> ' + path;
+					return rendered;
+				}
+				path.unshift(first);
+				return '' + path;
+			}
+			
+			const renderedobjects = {};
+			
+			console.log(renderedobjects);
+			
+			function renderobject(o, i, odata) {
+				let childrenrendered = false;
+				const renderchildren = function() {
+					if (!childrenrendered) {
+						odata.children = o.Children.map(() => ({}));
+						container.append(element('div', {class_: 'inner'}, ...o.Children.map((c, i) => renderobject(c, i, odata.children[i]))));
+						childrenrendered = true;
+					}
+				};
+				const container = element('div', {classes: ['object-inner', 'collapsible']},
+					...(i == undefined ? [] : [element('span', {class_: 'number'}, i)]),
+					asrtf(o.Name.Data, {class_: 'name', title: o.ID}),
+					o.Tag.Data == null ?
+						span('null', {classes: ['null', 'tag']}) :
+						span(o.Tag.Data, {classes: ['tag']}),
+					element('span', {events: {click: () => {
+						renderchildren();
+						container.classList.toggle('open');
+					}}, class_: 'button'}),
+					rendertransform(o),
+				);
+				odata.renderchildren = renderchildren;
+				odata.container = container;
+				return element('div', {class_: 'object'}, container, ...o.Components.Data.map(rendercomponent));
+			}
+			
+			function openobjectto(path) {
+				// path is a list of indexes of children
+				let ptr = renderedobjects;
+				for (let i of path) {
+					ptr.renderchildren();
+					ptr.container.classList.add('open');
+					ptr = ptr.children[i];
+				}
+			}
+			
+			window.openobjectto = openobjectto;
+			
+			document.querySelector('#container').append(renderobject(tree.Object, undefined, renderedobjects));
+			
+			function getassethash(uri) {
+				if (uri === null) {
+					return null;
+				} else if (uri.startsWith('@packdb:///')) {
+					return uri.slice(11);
+				} else if (uri.startsWith('@resdb:///')) {
+					return uri.slice(10).split('.')[0];
+				} else {
+					return null;
+				}
+			}
+			
+			function renderthing(a, i, type) {
+				const typename = tree.Types[a.Type];
+				const shorttypename = typename.replace(/(^|<)[^<>,]*\./g, '$1');
+				let meshimg;
+				let button;
+				const container = element('div', {classes: [type, 'collapsible']},
+					element('span', {class_: 'number'}, i),
+					element('span', {title: typename}, shorttypename),
+					...Object.entries(a.Data).map(([k, v]) => {
+						if (k == 'URL') {
+							const assethash = getassethash(v.Data);
+							if (assethash !== null) {
+								const asseturl = 'https://assets.resonite.com/' + assethash;
+								if (typename == '[FrooxEngine]FrooxEngine.StaticTexture2D') {
+									return element('img', {class_: 'asset-image', src: asseturl});
+								} else if (typename == '[FrooxEngine]FrooxEngine.StaticMesh') {
+									return meshimg = element('img', {class_: 'asset-image'});
+								}
+							}
+						}
+					}).filter(e => e != undefined),
+					button = element('span', {events: {click: () => container.classList.toggle('open')}, class_: 'button'}),
+					element('table', {class_: 'inner'},
+						...Object.entries(a.Data).map(([k, v]) => {
+							const e = element('tr', {},
+								element('td', {},
+									k,
+								),
+								element('td', v.Data in idpaths ? {title: renderpath(idpaths[v.Data]), class_: v.Data in idpaths ? 'idlink' : 'id'} : {},
+									typeof v == 'string' ? v : JSON.stringify(v.Data),
+								),
+							);
+							if (k == 'URL') {
+								const assethash = getassethash(v.Data);
+								if (assethash !== null) {
+									const asseturl = 'https://assets.resonite.com/' + assethash;
+									if (typename == '[FrooxEngine]FrooxEngine.StaticTexture2D') {
+										e.append(element('td', {}, element('img', {class_: 'image', src: asseturl})));
+									} else if (typename == '[FrooxEngine]FrooxEngine.StaticAudioClip') {
+										e.append(element('td', {}, element('audio', {controls: 'controls', src: asseturl})));
+									} else if (typename == '[FrooxEngine]FrooxEngine.StaticMesh') {
+										const meshcanvas = element('canvas', {class_: 'meshrender', 'width': '200', 'height': '200'});
+										e.append(element('td', {}, meshcanvas));
+										fetch('out/' + assethash + '-mesh.json').then(r => r.json()).then(mesh => {
+											const f = () => {
+												meshrender(mesh, meshcanvas,
+													() => meshcanvas.toBlob(blob => meshimg.src = URL.createObjectURL(blob))
+												);
+												button.removeEventListener('click', f);
+											}
+											button.addEventListener('click', f);
+										});
+									}
+								}
+							}
+							return e;
+						})
+					)
+				);
+				return container;
+			}
+			
+			function rendercomponent(a, i) {
+				return renderthing(a, i, 'component');
+			}
+			
+			function renderasset(a, i) {
+				return renderthing(a, i, 'asset');
+			}
+			
+			tree.Assets.map(renderasset).forEach((e, i) => document.querySelector('#container').append(element('div', {}, e)));
+    });
+  </script>
+</html>
