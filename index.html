@@ -131,6 +131,12 @@
 				background-color: #eee;
 			}
 			
+			.idlink {
+				border: 1px solid black;
+				border-radius: 3px;
+				text-wrap-mode: nowrap;
+			}
+			
 			.number {
 				width: 1.2em;
 				display: inline-block;
@@ -255,6 +261,8 @@
 			
 			const idusages = {};
 			
+			const uuidregex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+			
 			function walkforidusages(tree, path = []) {
 				if (tree === null) {
 					return;
@@ -264,7 +272,7 @@
 				} else if (typeof tree == 'object') {
 					Object.entries(tree).forEach(([k, subtree]) => walkforidusages(subtree, path.concat([k])));
 				} else if (typeof tree == 'string') {
-					if (tree.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)) {
+					if (tree.match(uuidregex)) {
 						if (path.at(-1).endsWith('ID')) {
 							return;
 						}
@@ -305,6 +313,7 @@
 			}
 			
 			function renderpath(path) {
+				const opath = path;
 				path = [...path]; // copy path so i can .shift() it
 				const first = path.shift();
 				if (first == 'Object') {
@@ -312,13 +321,26 @@
 					let rendered = current.Name.Data.replace(/<[^>]*>/g, '');
 					let k;
 					while ((k = path.shift()) == 'Children') {
-						current = current.Children[path.shift()];
-						rendered += ' -> ' + current.Name.Data.replace(/<[^>]*>/g, '');
+						const i = path.shift();
+						current = current.Children[i];
+						rendered += ' -> ' + i + ' ' + current.Name.Data.replace(/<[^>]*>/g, '');
 					}
 					if (k == undefined) {
 						return rendered;
 					}
-					path.unshift(k);
+					if (k == 'Components') {
+						path.shift(); // Data
+						const i = path.shift();
+						const c = current.Components.Data[i]
+						const typename = tree.Types[c.Type];
+						rendered += ' -> Component ' + i + ' ' + typename.replace(/(^|<)[^<>,]*\./g, '$1');
+						path.shift(); // Data
+						if (path.length == 0) {
+							return rendered;
+						}
+					} else {
+						path.unshift(k);
+					}
 					rendered += ' -> ' + path;
 					return rendered;
 				}
@@ -368,6 +390,28 @@
 			
 			window.openobjectto = openobjectto;
 			
+			function opento(path) {
+				path = [...path]; // copy path so i can .shift() it
+				const first = path.shift();
+				if (first == 'Object') {
+					let opath = [];
+					let current = renderedobjects;
+					let k;
+					while ((k = path.shift()) == 'Children') {
+						opath.push(path.shift());
+					}
+					if (k == undefined) {
+						openobjectto(opath);
+						return;
+					}
+					path.unshift(k);
+					openobjectto(opath);
+					return;
+				}
+				path.unshift(first);
+				return;
+			}
+			
 			document.querySelector('#container').append(renderobject(tree.Object, undefined, renderedobjects));
 			
 			function getassethash(uri) {
@@ -406,11 +450,21 @@
 					button = element('span', {events: {click: () => container.classList.toggle('open')}, class_: 'button'}),
 					element('table', {class_: 'inner'},
 						...Object.entries(a.Data).map(([k, v]) => {
+							let properties = {};
+							if (typeof v.Data == 'string' && v.Data.match(uuidregex)) {
+								properties.title = renderpath(idpaths[v.Data]);
+								if (v.Data in idpaths) {
+									properties.class_ = 'idlink';
+									properties.events = {click: () => opento(idpaths[v.Data])};
+								} else {
+									properties.class_ = 'id';
+								}
+							}
 							const e = element('tr', {},
 								element('td', {},
 									k,
 								),
-								element('td', v.Data in idpaths ? {title: renderpath(idpaths[v.Data]), class_: v.Data in idpaths ? 'idlink' : 'id'} : {},
+								element('td', properties,
 									typeof v == 'string' ? v : JSON.stringify(v.Data),
 								),
 							);
