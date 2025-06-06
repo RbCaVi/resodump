@@ -246,7 +246,7 @@ def readmeshx(data):
       meshes[meshidx].append(tri)
   out['meshes'] = meshes
 
-  bones += []
+  bones = []
   for i in range(header['bonecount']):
     name,data = unpackstring(data)
     bindpose,data = unpackn(unpackfloat4, 4, data)

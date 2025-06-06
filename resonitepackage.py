@@ -7,6 +7,7 @@
 
 import zipfile
 import json
+import os
 
 import readfrdt
 
