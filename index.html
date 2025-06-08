@@ -284,11 +284,25 @@
 				}
 			}
 			
+			function findcomponentsbytype(o, type, path = []) {
+				return o.Components.Data.map((c, i) => [c.Type, path, i]).filter(([t]) => t == type || tree.Types[t] == type).concat(...o.Children.map((c, i) => findcomponentsbytype(c, type, path.concat(i))));
+			}
+			
+			function findassetsbytype(type) {
+				return tree.Assets.map((a, i) => [a.Type, 'assets', i]).filter(([t]) => t == type) || tree.Types[t] == type;
+			}
+			
 			walkforids(tree);
 			walkforidusages(tree);
 			
 			window.idpaths = idpaths;
 			window.idusages = idusages;
+			window.findcomponentsbytypeunder = findcomponentsbytype;
+			window.findassetsbytype = findassetsbytype;
+			
+			window.findcomponentsbytype = function(type) {
+				return findcomponentsbytype(tree.Object, type).concat(findassetsbytype(type));
+			}
 			
       window.tree = tree
 			
