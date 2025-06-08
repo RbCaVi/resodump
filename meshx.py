@@ -27,7 +27,7 @@
 #     put into the uv array sequentially
 #   otherwise (version 1, 2, 3, 4, 5):
 #     uvs are all 2d and only present with corresponding flags
-#     there are 4 uvs
+#     there are up to 4 uvs
 #     the flags in question: bits 5-8 (16, 32, 64, 128)
 #   color profile (version 7) - string - Linear, sRGB, or sRGBAlpha
 #   compression (version 2, 3, 4, 5, 6, 7) - 1 byte - 0 = none, 1 = lz4, 2 = lzma - determines the compression method of the rest of the file - technically 7bit encoded
@@ -103,9 +103,11 @@ def unpackheader(data):
   if version >= 6:
     uvcount,data = unpack.unpack7bit(data)
     uvdims,data = unpack.unpackbytes(uvcount, data)
-    out['uvdims'] = [*enumerate(uvdims)]
+    out['uvdims'] = uvdims
   else:
-    out['uvdims'] = [(i, 2) for i,f in enumerate([flags & 16, flags & 32, flags & 64, flags & 128]) if f]
+    uvis = [i for i,f in enumerate([flags & 16, flags & 32, flags & 64, flags & 128]) if f]
+    assert uvis in [[], [0], [0, 1], [0, 1, 2], [0, 1, 2, 3]] # make sure they're consecutive
+    out['uvdims'] = [2 for _ in uvis]
   if version > 6:
     # read a string or something to an enum
     # Linear, sRGB, sRGBAlpha
@@ -207,18 +209,18 @@ def read(data):
     out['bonebindings'] = bonebindings
 
   uvs = []
-  for i,dim in header['uvdims']:
+  for dim in header['uvdims']:
     if dim == 2:
       uv,data = unpackn(unpackfloat2, vertcount, data)
-      uvs.append((i, uv))
+      uvs.append(uv))
     elif dim == 3:
       uv,data = unpackn(unpackfloat3, vertcount, data)
-      uvs.append((i, uv))
+      uvs.append(uv))
     elif dim == 4:
       uv,data = unpackn(unpackfloat4, vertcount, data)
-      uvs.append((i, uv))
+      uvs.append(uv))
     else:
-      print('weird uv dimension:', i, dim)
+      print('weird uv dimension:', dim)
   out['uvs'] = uvs
 
   meshes = []
