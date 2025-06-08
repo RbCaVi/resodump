@@ -254,6 +254,7 @@ def read(data):
       'name': name,
       'bindpose': tuple(bindpose),
     })
+  out['bones'] = bones
 
   blendshapes = {}
   for i in range(header['blendshapecount']):
