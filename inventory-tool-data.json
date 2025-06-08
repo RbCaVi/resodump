@@ -1,0 +1,252 @@
+{
+  "Object": {"Name": "Inventory Tool",
+    "Components": [
+      {"type": "[FrooxEngine]FrooxEngine.RawDataTool",
+        "_equipLink": null,
+        "TipReference": null,
+        "BlockGripEquip": false,
+        "BlockRemoteEquip": false,
+        "EquipName": "Tool",
+        "_overrideActiveTool": null,
+        "_gripPosesGenerated": true,
+        "LocalTipOffset": [0, 0, 0],
+        "LocalTipReference": null,
+        "UseLaser": true,
+        "BlockPrimaryWhenTouching": false,
+        "UseSecondary": false,
+        "AllowUseWhenHolding": false,
+        "Equipped": false,
+        "ControllerType": -1,
+        "ControllerSide": "-1",
+        "PrimaryStrength": null,
+        "SecondaryAxis": null,
+        "Primary": null,
+        "Secondary": null,
+        "_primaryStrengthStream": null,
+        "_secondaryAxisStream": null,
+        "_primaryStream": null,
+        "_secondaryStream": null,
+        "_rawStrength": 0,
+        "_rawAxis": [0, 0],
+        "_rawPrimary": false,
+        "_rawSecondary": false,
+        "PrimaryActionDescription": "",
+        "SecondaryActionDescription": ""
+      },
+      {"type": "[FrooxEngine]FrooxEngine.Grabbable",
+        "ReparentOnRelease": true,
+        "PreserveUserSpace": true,
+        "DestroyOnRelease": false,
+        "GrabPriority": 1,
+        "GrabPriorityWhenGrabbed": -1,
+        "CustomCanGrabCheck": {"Target": null},
+        "EditModeOnly": false,
+        "AllowSteal": false,
+        "DropOnDisable": true,
+        "ActiveUserFilter": "Disabled",
+        "OnlyUsers": [],
+        "Scalable": false,
+        "Receivable": true,
+        "AllowOnlyPhysicalGrab": false,
+        "_grabber": null,
+        "_lastParent": null,
+        "_lastParentIsUserSpace": true,
+        "__legacyActiveUserRootOnly-ID": "###id###"
+      },
+      {"type": "[FrooxEngine]FrooxEngine.MeshCollider",
+        "Offset": [0, 0, 0],
+        "Type": "NoCollision",
+        "Mass": 1,
+        "CharacterCollider": false,
+        "IgnoreRaycasts": false,
+        "Mesh": "###toolmesh###",
+        "Sidedness": "Front",
+        "ActualSpeculativeMargin": null
+      },
+      {"type": "[FrooxEngine]FrooxEngine.MeshRenderer",
+        "Mesh": "###toolmesh###",
+        "Materials": [
+          {
+            "Data": "###unlitgrey###"
+          }
+        ],
+        "MaterialPropertyBlocks": [],
+        "ShadowCastMode": "On",
+        "MotionVectorMode": "Object",
+        "SortingOrder": 0
+      }
+    ],
+    "Children": [
+      {"Name": "Templates",
+        "Active": false,
+        "Children": [
+          {"Name": "Inventory",
+            "Tag": "RbCaViInventory",
+            "Components": [
+              {"type": "[FrooxEngine]FrooxEngine.Grabbable",
+                "ReparentOnRelease": true,
+                "PreserveUserSpace": true,
+                "DestroyOnRelease": false,
+                "GrabPriority": 1,
+                "GrabPriorityWhenGrabbed": -1,
+                "CustomCanGrabCheck": {"Target": null},
+                "EditModeOnly": false,
+                "AllowSteal": false,
+                "DropOnDisable": true,
+                "ActiveUserFilter": "Disabled",
+                "OnlyUsers": [],
+                "Scalable": false,
+                "Receivable": true,
+                "AllowOnlyPhysicalGrab": false,
+                "_grabber": null,
+                "_lastParent": null,
+                "_lastParentIsUserSpace": true,
+                "__legacyActiveUserRootOnly-ID": "###id###"
+              },
+              {"type": "[FrooxEngine]FrooxEngine.MeshCollider",
+                "Offset": [0, 0, 0],
+                "Type": "NoCollision",
+                "Mass": 1,
+                "CharacterCollider": false,
+                "IgnoreRaycasts": false,
+                "Mesh": "###inventorymesh###",
+                "Sidedness": "Front",
+                "ActualSpeculativeMargin": null
+              },
+              {"type": "[FrooxEngine]FrooxEngine.MeshRenderer",
+                "Mesh": "###inventorymesh###",
+                "Materials": [
+                  {
+                    "Data": "###unlitgrey###"
+                  }
+                ],
+                "MaterialPropertyBlocks": [],
+                "ShadowCastMode": "On",
+                "MotionVectorMode": "Object",
+                "SortingOrder": 0
+              },
+              {"type": "[FrooxEngine]FrooxEngine.DynamicVariableSpace",
+                "SpaceName": "RbCaViInventory",
+                "OnlyDirectBinding": true
+              },
+              {"type": "[FrooxEngine]FrooxEngine.DynamicValueVariable<bool>",
+                "VariableName": "RbCaViInventory",
+                "Value": false,
+                "OverrideOnLink": true
+              }
+            ],
+            "Children": [
+              {"Name": "Items", "id": "inventoryitems",
+                "Tag": "RbCaViInventoryItems"
+              },
+              {"Name": "Code",
+                "Children": [
+                ]
+              }
+            ]
+          },
+          {"Name": "Item Slot", "id": "inventoryslot",
+            "Children": [
+              {"Name": "Code",
+                "Children": [
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {"Name": "Code",
+        "Children": [
+        ]
+      }
+    ]
+  },
+  "Assets": [
+    {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "inventorymesh",
+      "URL": "##@invside.meshx###",
+      "Readable": false
+    },
+    {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "slotmesh",
+      "URL": "##@slot.meshx###",
+      "Readable": false
+    },
+    {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "toolmesh",
+      "URL": "##@tool.meshx###",
+      "Readable": false
+    },
+    {"type": "[FrooxEngine]FrooxEngine.UnlitMaterial", "id": "slotyellow",
+      "HighPriorityIntegration": false,
+      "TintColor": [0.8, 0.8, 0.0, 0.1, "Linear"],
+      "Texture": null,
+      "TextureScale": [1, 1],
+      "TextureOffset": [0, 0],
+      "MaskTexture": null,
+      "MaskScale": [1, 1],
+      "MaskOffset": [0, 0],
+      "MaskMode": "MultiplyAlpha",
+      "BlendMode": "Alpha",
+      "AlphaCutoff": 0.5,
+      "UseVertexColors": false,
+      "VertexColorInterpolationSpace": "Linear",
+      "Sidedness": "Double",
+      "ZWrite": "Auto",
+      "OffsetTexture": null,
+      "OffsetMagnitude": [0, 0],
+      "OffsetTextureScale": [1, 1],
+      "OffsetTextureOffset": [0, 0],
+      "PolarUVmapping": false,
+      "PolarPower": 1,
+      "StereoTextureTransform": false,
+      "RightEyeTextureScale": [1, 1],
+      "RightEyeTextureOffset": [0, 0],
+      "DecodeAsNormalMap": false,
+      "UseBillboardGeometry": false,
+      "UsePerBillboardScale": false,
+      "UsePerBillboardRotation": false,
+      "UsePerBillboardUV": false,
+      "BillboardSize": [0.005, 0.005],
+      "OffsetFactor": 10,
+      "OffsetUnits": 0,
+      "RenderQueue": -1,
+      "_unlit-ID": "###id###",
+      "_unlitBillboard-ID": "###id###"
+    },
+    {"type": "[FrooxEngine]FrooxEngine.UnlitMaterial", "id": "unlitgrey",
+      "HighPriorityIntegration": false,
+      "TintColor": [0.8, 0.8, 0.8, 1.0, "Linear"],
+      "Texture": null,
+      "TextureScale": [1, 1],
+      "TextureOffset": [0, 0],
+      "MaskTexture": null,
+      "MaskScale": [1, 1],
+      "MaskOffset": [0, 0],
+      "MaskMode": "MultiplyAlpha",
+      "BlendMode": "Alpha",
+      "AlphaCutoff": 0.5,
+      "UseVertexColors": false,
+      "VertexColorInterpolationSpace": "Linear",
+      "Sidedness": "Double",
+      "ZWrite": "Auto",
+      "OffsetTexture": null,
+      "OffsetMagnitude": [0, 0],
+      "OffsetTextureScale": [1, 1],
+      "OffsetTextureOffset": [0, 0],
+      "PolarUVmapping": false,
+      "PolarPower": 1,
+      "StereoTextureTransform": false,
+      "RightEyeTextureScale": [1, 1],
+      "RightEyeTextureOffset": [0, 0],
+      "DecodeAsNormalMap": false,
+      "UseBillboardGeometry": false,
+      "UsePerBillboardScale": false,
+      "UsePerBillboardRotation": false,
+      "UsePerBillboardUV": false,
+      "BillboardSize": [0.005, 0.005],
+      "OffsetFactor": 10,
+      "OffsetUnits": 0,
+      "RenderQueue": -1,
+      "_unlit-ID": "###id###",
+      "_unlitBillboard-ID": "###id###"
+    }
+  ]
+}

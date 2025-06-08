@@ -1,0 +1,101 @@
+[
+Name
+Tag = null
+Active = true
+Children = []
+Components = []
+Position = [0, 0, 0]
+Rotation = [0, 0, 0, 1]
+Scale = [1, 1, 1]
+]
+
+[
+Type
+Enabled = true
+]
+
+[
+Type
+Enabled = true
+]
+
+Object has ['ID', 'Persistent-ID', 'OrderOffset' = 0, 'ParentReference'] // auto
+Component has ['ID', 'persistent-ID', 'UpdateOrder' = 0] // auto
+Asset has ['ID', 'persistent' = false, 'UpdateOrder' = 0] // auto
+
+Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference to point somewhere else?
+  Templates
+    Inventory {DynamicVariableSpace<RbCaViInventory>, DynamicValueVariable<bool, RbCaViInventory/Opened>}
+      Inventory Updater <RbCaViInventory>
+        OnChildRemoved = OnChildAdded = Dynamic Impulse Reciever <UpdateInventory>
+          itemcount = count children ([Inventory Items])
+          opened,_hasvalue = Dynamic Variable Input <RbCaViInventory/Opened>
+          @If (opened)
+            true: {
+              @For (itemcount, false)
+                LoopStart: {}
+                LoopIteration: {
+                  itemslot = Get Child ([Inventory Items], i)
+                  x = Mul (i, 0.3)
+                  pos = Pack xyz (x, 0, 0) // TODO: grid
+                  @Set Local Position (itemslot, pos)
+                }
+              @Set Slot Active Self ([[Inventory]], true)
+            }
+            false: {
+              @Set Slot Active Self ([[Inventory]], false)
+            }
+      Inventory Items <RbCaViInventoryItems>
+    Inventory Slot // transparent sphere ~0.25 units diameter
+      Inventory Slot Code
+        OnChildRemoved
+          @Destroy Slot ([[Inventory Slot]], false, true)
+  Tool Code
+    RawDataToolEvents
+      PrimaryPressed: {
+        _inventory,invtop = [GetInventory]
+        _found,opened = Read Dynamic Variable (invtop, "RbCaViInventory/Opened")
+        vopened2 = NOT (opened)
+        Write Dynamic Variable (invtop, "RbCaViInventory/Opened", opened2)
+          OnSuccess: {
+            Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+          }
+      }
+      SecondaryPressed: {
+        inventory,invtop = [GetInventory]
+        islot = Duplicate Slot ([[Inventory Slot Template]], inventory)
+        item = get grabbed item????? // TODO
+        Set Parent (item, islot, true)
+        Set Local Position (item, [0;0;0])
+        bbox = Compute Bounding Box (item, false, islot, null)
+        _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
+        sizex,sizey,sizez = Unpack xyz (size)
+        maxsize = Value Max Multi (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
+        ratio = Div (0.2, maxsize)
+        scale = Min (1, ratio)
+        ipos,_rot,iscale = Local Transform (item)
+        iscale2 = Mul (scale, iscale)
+        ipos2 = Mul (scale, ipos)
+        ipos3 = Mul (-1, ipos)
+        Set Local Position (item, ipos3)
+        Set Local Scale (item, iscale2)
+        Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+      }
+    [GetInventory]
+      user = Get Active User Self
+      userroot = User Root Slot (user)
+      inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
+      exists = Not Null (inventory)
+      existsi = Zero One (exists)
+      Impulse Multiplexer (existsi)
+        0: {
+          dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+          X (0)
+        }
+        1: {
+          X (1)
+        }
+      i = Impulse Demultiplexer <X>
+      invtop,_inputcount = Multiplex (i, dupinv, inventory)
+      inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
+      return inv
