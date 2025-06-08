@@ -234,3 +234,55 @@ import frdt
 
 #with open('out.frdt', 'wb') as f:
 #  f.write(frdt.write(out))
+
+import resonitepackage
+import datetime
+
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()[:-6] + 'Z'
+me = 'U-1YuDa214TQG'
+
+mainrecord = {
+  'creationTime': now,
+  'description': None,
+  'firstPublishTime': None,
+  'id': 'R-Main',
+  'isDeleted': False,
+  'isForPatrons': False,
+  'isListed': False,
+  'isPublic': False,
+  'isReadOnly': False,
+  'lastModificationTime': now,
+  'migrationMetadata': None,
+  'name': out['Object']['Name']['Data'],
+  'ownerId': me,
+  'ownerName': None,
+  'path': None,
+  'randomOrder': 0,
+  'rating': 0,
+  'recordType': 'object',
+  'submissions': None,
+  'tags': None,
+  'thumbnailUri': None,
+  'version': {
+    'globalVersion': 0,
+    'lastModifyingMachineId': None,
+    'lastModifyingUserId': None,
+    'localVersion': 0
+  },
+  'visits': 0
+}
+
+assetmanifest = []
+
+with resonitepackage.ResonitePackage('out.resonitepackage', 'w') as package:
+  for a,h in assethashes.items():
+    with open(a, 'rb') as f:
+      data = f.read()
+      package.addasset(h, data)
+      assetmanifest.append({'hash': h, 'bytes': len(data)})
+  maindata = frdt.write(out)
+  mainhash = hex(0x100000000 + hash(maindata))[3:] * 2
+  package.addasset(mainhash, maindata)
+  mainrecord['assetManifest'] = assetmanifest
+  mainrecord['assetUri'] = 'packdb:///' + mainhash
+  package.setmainrecord(mainrecord)
