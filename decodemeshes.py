@@ -5,7 +5,7 @@ import os
 import json
 
 import resonitepackage
-import readmeshx
+import meshx
 
 with resonitepackage.ResonitePackage('Redprint Manager 2.4.zip') as package:
   for assethash in package.assetlist():
@@ -25,4 +25,4 @@ with resonitepackage.ResonitePackage('Redprint Manager 2.4.zip') as package:
         continue
     print(f'yes, {len(data)} bytes')
     with open(os.path.join('out', assethash + '-mesh.json'), 'w') as f:
-      json.dump(readmeshx.readmeshx(data), f)
+      json.dump(meshx.read(data), f)

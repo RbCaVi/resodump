@@ -175,7 +175,7 @@ def normalizebonebinding(b):
   weights = tuple(w / totalweight for w in weights)
   return idxs, weights
 
-def readmeshx(data):
+def read(data):
   header,data = unpackheader(data)
   version = header['version']
   vertcount = header['vertexcount']
