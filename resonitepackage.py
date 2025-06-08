@@ -14,9 +14,9 @@ import frdt
 class ResonitePackage:
   # wrapper around ZipFile to get assets and main record from a .resonitepackage file
   # there is also metadata, but i didn't 
-  def __init__(self, file):
+  def __init__(self, file, mode = 'r'):
     # `file` can be a path or a file object
-    self.zipfile = zipfile.ZipFile(file, 'r')
+    self.zipfile = zipfile.ZipFile(file, mode)
   
   def __enter__(self):
     return self
@@ -41,6 +41,18 @@ class ResonitePackage:
 
   def assetlist(self):
     return [os.path.basename(p) for p in self.zipfile.namelist() if 'Assets' in p]
+  
+  def addasset(self, asset, data):
+    if asset.startswith('packdb:///'):
+      assethash = asset[len('packdb:///'):]
+    else:
+      assethash = asset
+    with self.zipfile.open(f'Assets/{assethash}', 'w') as assetf:
+      assetf.write(data)
+  
+  def setmainrecord(self, data):
+    with self.zipfile.open('R-Main.record', 'w') as recordf:
+      json.dump(data, recordf)
   
   def __exit__(self, type, value, tb):
     self.zipfile.close()
