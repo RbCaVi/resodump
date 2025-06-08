@@ -28,3 +28,6 @@ def readfrdt(frdtdata):
     # brotli
     frdtbson = brotli.decompress(compressed)
   return bson.loads(frdtbson)
+
+def writefrdt(tree):
+  return struct.pack('<4sib', b'FrDT', 0, 3) + brotli.compress(bson.dumps(tree))
