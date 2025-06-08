@@ -52,10 +52,11 @@ def processobject1(o):
       out['Children'] = [processobject1(c) for c in value]
       continue
     if prop == 'Components':
-      value = [processcomponent1(c) for c in value]
+      out['Components'] = [processcomponent1(c) for c in value]
+      continue
     else:
       value = processvalue1(value)
-    if type(value) == dict and 'ID' not in value:
+    if type(value) != dict or 'ID' not in value:
       value = {"ID": next(ids), "Data": value}
     out[prop] = value
   if 'id' in o:
@@ -93,7 +94,7 @@ def processcomponent1(c):
       out['type'] = value
       continue
     value = processvalue1(value)
-    if type(value) == dict and 'ID' not in value:
+    if type(value) != dict or 'ID' not in value:
       value = {"ID": next(ids), "Data": value}
     out[prop] = value
   if 'id' in c:
@@ -131,7 +132,7 @@ def processasset1(a):
       out['type'] = value
       continue
     value = processvalue1(value)
-    if type(value) == dict and 'ID' not in value:
+    if type(value) != dict or 'ID' not in value:
       value = {"ID": next(ids), "Data": value}
     out[prop] = value
   if 'id' in a:
