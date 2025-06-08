@@ -9,7 +9,7 @@ import zipfile
 import json
 import os
 
-import readfrdt
+import frdt
 
 class ResonitePackage:
   # wrapper around ZipFile to get assets and main record from a .resonitepackage file
@@ -28,7 +28,7 @@ class ResonitePackage:
   def getmainasset(self):
     mainrecord = self.getmainrecord()
     frdtdata = self.getasset(mainrecord['assetUri'])
-    tree = readfrdt.readfrdt(frdtdata)
+    tree = frdt.read(frdtdata)
     return tree
 
   def getasset(self, asset):
