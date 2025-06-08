@@ -30,26 +30,26 @@ Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference
         OnChildRemoved = OnChildAdded = Dynamic Impulse Reciever <UpdateInventory>
           itemcount = count children ([Inventory Items])
           opened,_hasvalue = Dynamic Variable Input <RbCaViInventory/Opened>
-          @If (opened)
+          If (opened)
             true: {
-              @For (itemcount, false)
+              i = For (itemcount, false)
                 LoopStart: {}
                 LoopIteration: {
                   itemslot = Get Child ([Inventory Items], i)
                   x = Mul (i, 0.3)
                   pos = Pack xyz (x, 0, 0) // TODO: grid
-                  @Set Local Position (itemslot, pos)
+                  Set Local Position (itemslot, pos)
                 }
-              @Set Slot Active Self ([[Inventory]], true)
+              Set Slot Active Self ([[Inventory]], true)
             }
             false: {
-              @Set Slot Active Self ([[Inventory]], false)
+              Set Slot Active Self ([[Inventory]], false)
             }
       Inventory Items <RbCaViInventoryItems>
     Inventory Slot // transparent sphere ~0.25 units diameter
       Inventory Slot Code
         OnChildRemoved
-          @Destroy Slot ([[Inventory Slot]], false, true)
+          Destroy Slot ([[Inventory Slot]], false, true)
   Tool Code
     RawDataToolEvents
       PrimaryPressed: {
@@ -65,20 +65,32 @@ Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference
         inventory,invtop = [GetInventory]
         islot = Duplicate Slot ([[Inventory Slot Template]], inventory)
         item = get grabbed item????? // TODO
-        Set Parent (item, islot, true)
-        Set Local Position (item, [0;0;0])
-        bbox = Compute Bounding Box (item, false, islot, null)
-        _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
-        sizex,sizey,sizez = Unpack xyz (size)
-        maxsize = Value Max Multi (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
-        ratio = Div (0.2, maxsize)
-        scale = Min (1, ratio)
-        ipos,_rot,iscale = Local Transform (item)
-        iscale2 = Mul (scale, iscale)
-        ipos2 = Mul (scale, ipos)
-        ipos3 = Mul (-1, ipos)
-        Set Local Position (item, ipos3)
-        Set Local Scale (item, iscale2)
+        side = Tool Equipping Side ([[Tool]])
+        hand = Get Side (LeftHand, side)
+        user = Get Active User Self
+        grabber = Get User Grabber (user, hand)
+        gslot = Get Slot (grabber)
+        itemholder = Find Child By Name (gslot, holder, true, true. 0)
+        itemcount = Children Count (holder)
+        i = For (itemcount, true)
+          LoopStart: {}
+          LoopIteration: {
+            item = Get Child (itemholder, i)
+            Set Parent (item, islot, true)
+            Set Local Position (item, [0;0;0])
+            bbox = Compute Bounding Box (item, false, islot, null)
+            _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
+            sizex,sizey,sizez = Unpack xyz (size)
+            maxsize = Value Max Multi (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
+            ratio = Div (0.2, maxsize)
+            scale = Min (1, ratio)
+            ipos,_rot,iscale = Local Transform (item)
+            iscale2 = Mul (scale, iscale)
+            ipos2 = Mul (scale, ipos)
+            ipos3 = Mul (-1, ipos)
+            Set Local Position (item, ipos3)
+            Set Local Scale (item, iscale2)
+          }
         Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
       }
     [GetInventory]
@@ -95,6 +107,43 @@ Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference
         1: {
           X (1)
         }
+      // i'm not sure about this syntax
+      // maybe have a switch + return syntax that automatically does this?
+      /*
+      invtop = Switch (existsi)
+        0: {
+          dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+          Return dupinv
+        }
+        1: {
+          Return inventory
+        }
+      */
+      // there is the issue of more complex flow control though
+      // maybe fork and join?
+      /*
+      Fork (x)
+        0: {Return 1 @1}
+        1: {Return 2 @2}
+        2: {Return "nope" @3}
+      n = Join (@1, @2)
+        {
+          s = To String (n)
+          Return s @12
+        }
+      s = Join (@12, @3)
+        {
+          Return s
+        }
+      */
+      // this is weird syntax (not good imo tbh frfr)
+      // though i don't think such structures are very necessary
+      // also i could just use If and Conditional here
+      // and i don't even need i - it's the same as existsi
+      // i could make an explicit continuation syntax
+      // can i just connect multiple impulses into one impulse input?
+      // no, i need i
+      // actually yes - i = existsi
       i = Impulse Demultiplexer <X>
       invtop,_inputcount = Multiplex (i, dupinv, inventory)
       inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
