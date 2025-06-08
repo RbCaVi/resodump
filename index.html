@@ -452,8 +452,8 @@
 						...Object.entries(a.Data).map(([k, v]) => {
 							let properties = {};
 							if (typeof v.Data == 'string' && v.Data.match(uuidregex)) {
-								properties.title = renderpath(idpaths[v.Data]);
 								if (v.Data in idpaths) {
+									properties.title = renderpath(idpaths[v.Data]);
 									properties.class_ = 'idlink';
 									properties.events = {click: () => opento(idpaths[v.Data])};
 								} else {
