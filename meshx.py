@@ -106,13 +106,13 @@ def unpackheader(data):
     out['uvdims'] = uvdims
   else:
     uvis = [i for i,f in enumerate([flags & 16, flags & 32, flags & 64, flags & 128]) if f]
-    assert uvis in [[], [0], [0, 1], [0, 1, 2], [0, 1, 2, 3]] # make sure they're consecutive
+    assert uvis in [[], [0], [0, 1], [0, 1, 2], [0, 1, 2, 3]], 'non consecutive uv flags' # make sure they're consecutive
     out['uvdims'] = [2 for _ in uvis]
   if version > 6:
     # read a string or something to an enum
     # Linear, sRGB, sRGBAlpha
     colorprofile,data = unpackstring(data)
-    assert colorprofile in [b'Linear', b'sRGB', b'sRGBAlpha']
+    assert colorprofile in [b'Linear', b'sRGB', b'sRGBAlpha'], 'unrecognized color profile: ' + colorprofile
     out['colorprofile'] = colorprofile
   else:
     out['colorprofile'] = 'sRGB'
@@ -229,7 +229,7 @@ def read(data):
       meshtype,data = unpackstring(data)
       if meshtype == b'':
         continue
-      assert meshtype in [b'Points', b'Triangles']
+      assert meshtype in [b'Points', b'Triangles'], 'unknown mesh type: ' + meshtype
       primcount,data = unpack.unpack7bit(data)
       if meshtype == b'Triangles':
         tris,data = unpackarray(unpackint3, primcount, data)
@@ -288,3 +288,133 @@ def read(data):
   assert len(data) == 0, 'file had extra data at the end'
 
   return out
+
+def pack7bit(n):
+  data = b''
+  while n >= 128:
+    data += bytes([n & 127])
+    n >>= 7
+  data += bytes([n & 127])
+  return data
+
+def packfloat2(data):
+  return struct.pack('<ff', *data)
+
+def packfloat3(data):
+  return struct.pack('<fff', *data)
+
+def packfloat4(data):
+  return struct.pack('<ffff', *data)
+
+def packcolor(data):
+  return struct.pack('<ffff', *data)
+
+def packint3(data):
+  return struct.pack('<iii', *data)
+
+def packint(data):
+  return struct.pack('<i', data)
+
+def packbonebinding(bonebinding):
+  (i1,i2,i3,i4),weights = bonebinding
+  data += pack7bit(i1)
+  data += pack7bit(i2)
+  data += pack7bit(i3)
+  data += pack7bit(i4)
+  data += struct.pack('<ffff', *weights)
+  return data
+
+def packstring(s):
+  return pack7bit(len(s)) + s
+
+def packarray(packx, xs):
+  data = b''
+  for x in xs:
+    data += packx(x)
+  return data
+
+def write(meshx):
+  # version 6 :)
+  # i got a version 6 file so i'm writing a version 6 file
+  flags = (
+    1 * ('normals' in meshx) +
+    2 * ('tangents' in meshx) +
+    4 * ('colors' in meshx) +
+    8 * ('bonebindings' in meshx)
+  )
+  
+  assert 'vertices' in meshx, 'no vertices :('
+  assert len(set(len(meshx[a]) for a in ['vertices', 'normals', 'tangents', 'colors', 'bonebindings'] if a in meshx)) == 1, 'mismatched attribute lengths'
+  
+  bones = meshx.get('bones', [])
+  blendshapes = meshx.get('blendshapes', {})
+  uvs = meshx.get('uvs', [])
+  
+  data = struct.pack('<6sii', b'\x05MeshX', 6, flags)
+  data += pack7bit(len(meshx['vertices']))
+  data += pack7bit(len(meshx['meshes']))
+  data += pack7bit(len(bones))
+  data += pack7bit(len(blendshapes))
+  data += pack7bit(len(uvs))
+  data += bytes([len(uv[0]) for i,uv in meshx['uvs']]) # assuming there are actually vertices :)
+  
+  meshdata = b''
+  
+  meshdata += packarray(packfloat3, meshx['vertices'])
+  
+  if 'normals' in meshx:
+    meshdata += packarray(packfloat3, meshx['normals'])
+  
+  if 'tangents' in meshx:
+    meshdata += packarray(packfloat4, meshx['tangents'])
+  
+  if 'colors' in meshx:
+    meshdata += packarray(packcolor, meshx['colors'])
+  
+  if 'bonebindings' in meshx:
+    meshdata += packarray(packbonebinding, meshx['bonebindings'])
+  
+  for uv in uvs:
+    if len(uv[0]) == 2:
+      meshdata += packarray(packfloat2, uv)
+    elif len(uv[0]) == 3:
+      meshdata += packarray(packfloat3, uv)
+    elif len(uv[0]) == 4:
+      meshdata += packarray(packfloat4, uv)
+    else:
+      print('weird uv dimension:', len(uv[0]))
+
+  for mesh in meshx['meshes']:
+    # i'm assuming you can tell the mesh type from components per primitive
+    assert len(mesh[0]) in [1, 3], f'unrecognized mesh primitive with {len(mesh[0])} points per primitive'
+    meshtype = {1: 'Points', 3: 'Triangles'}[len(mesh[0])]
+    meshdata += packstring(meshtype)
+    if meshtype == 'Points':
+      meshdata += packarray(packint, mesh)
+    elif meshtype == 'Triangles':
+      meshdata += packarray(packint3, mesh)
+  
+  for bone in bones:
+    meshdata += packstring(bone['name'])
+    meshdata += packarray(packfloat4, bone['bindpose'])
+  
+  for name,blendshape in blendshapes.items():
+    meshdata += packstring(name.encode('utf-8'))
+    flags = (
+      1 * ('normals' in blendshape) +
+      2 * ('tangents' in blendshape)
+    )
+    meshdata += pack7bit(flags)
+    meshdata += pack7bit(len(blendshape))
+    for frame in blendshape:
+      meshdata += struct.pack('<f', frame['weight'])
+      meshdata += packarray(packfloat3, frame['vertices'])
+      if 'normals' in frame:
+        meshdata += packarray(packfloat3, frame['normals'])
+      if 'tangents' in frame:
+        meshdata += packarray(packfloat4, frame['tangents'])
+  
+  data += struct.pack('<b', 0) # no compression
+  data += meshdata
+  
+  return meshdata
