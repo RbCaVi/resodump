@@ -11,7 +11,7 @@ import struct
 import brotli
 import bson
 
-def readfrdt(frdtdata):
+def read(frdtdata):
   # read an frdt file into a json object
   (magic, version, compression) = struct.unpack('<4sib', frdtdata[:9])
   assert magic == b'FrDT'
@@ -29,5 +29,5 @@ def readfrdt(frdtdata):
     frdtbson = brotli.decompress(compressed)
   return bson.loads(frdtbson)
 
-def writefrdt(tree):
+def write(tree):
   return struct.pack('<4sib', b'FrDT', 0, 3) + brotli.compress(bson.dumps(tree))
