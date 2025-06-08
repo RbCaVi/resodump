@@ -164,7 +164,7 @@ def unpackstring(data):
   length,data = unpack.unpack7bit(data)
   return unpack.unpackbytes(length, data)
 
-def unpackn(unpackx, count, data):
+def unpackarray(unpackx, count, data):
   xs = []
   for i in range(count):
     x,data = unpackx(data)
@@ -187,23 +187,23 @@ def read(data):
 
   out = {}
 
-  vertices,data = unpackn(unpackfloat3, vertcount, data)
+  vertices,data = unpackarray(unpackfloat3, vertcount, data)
   out['vertices'] = vertices
 
   if header['hasnormals']:
-    normals,data = unpackn(unpackfloat3, vertcount, data)
+    normals,data = unpackarray(unpackfloat3, vertcount, data)
     out['normals'] = normals
 
   if header['hastangents']:
-    tangents,data = unpackn(unpackfloat4, vertcount, data)
+    tangents,data = unpackarray(unpackfloat4, vertcount, data)
     out['tangents'] = tangents
 
   if header['hascolors']:
-    colors,data = unpackn(unpackcolor, vertcount, data)
+    colors,data = unpackarray(unpackcolor, vertcount, data)
     out['colors'] = colors
 
   if header['hasbonebindings']:
-    bonebindings,data = unpackn(unpackbonebinding, vertcount, data)
+    bonebindings,data = unpackarray(unpackbonebinding, vertcount, data)
     if version < 5:
       bonebindings = [normalizebonebinding(b) for b in bonebindings]
     out['bonebindings'] = bonebindings
@@ -211,13 +211,13 @@ def read(data):
   uvs = []
   for dim in header['uvdims']:
     if dim == 2:
-      uv,data = unpackn(unpackfloat2, vertcount, data)
+      uv,data = unpackarray(unpackfloat2, vertcount, data)
       uvs.append(uv))
     elif dim == 3:
-      uv,data = unpackn(unpackfloat3, vertcount, data)
+      uv,data = unpackarray(unpackfloat3, vertcount, data)
       uvs.append(uv))
     elif dim == 4:
-      uv,data = unpackn(unpackfloat4, vertcount, data)
+      uv,data = unpackarray(unpackfloat4, vertcount, data)
       uvs.append(uv))
     else:
       print('weird uv dimension:', dim)
@@ -232,17 +232,17 @@ def read(data):
       assert meshtype in [b'Points', b'Triangles']
       primcount,data = unpack.unpack7bit(data)
       if meshtype == b'Triangles':
-        tris,data = unpackn(unpackint3, primcount, data)
+        tris,data = unpackarray(unpackint3, primcount, data)
         meshes.append(tris)
       elif meshtype == b'Points':
-        points,data = unpackn(unpackint, primcount, data)
+        points,data = unpackarray(unpackint, primcount, data)
         meshes.append(points)
   elif header['modelcount'] == 1: # version == 0?
-    tris,data = unpackn(unpackint3, header['tricount'], data)
+    tris,data = unpackarray(unpackint3, header['tricount'], data)
     meshes.append(tris)
   else:
-    tris,data = unpackn(unpackint3, header['tricount'], data)
-    trimeshes,data = unpackn(unpackint, header['tricount'], data)
+    tris,data = unpackarray(unpackint3, header['tricount'], data)
+    trimeshes,data = unpackarray(unpackint, header['tricount'], data)
     meshes = [[] for _ in range(header['modelcount'])]
     for tri,meshidx in zip(tris, trimeshes):
       meshes[meshidx].append(tri)
@@ -251,7 +251,7 @@ def read(data):
   bones = []
   for i in range(header['bonecount']):
     name,data = unpackstring(data)
-    bindpose,data = unpackn(unpackfloat4, 4, data)
+    bindpose,data = unpackarray(unpackfloat4, 4, data)
     bones.append({
       'name': name,
       'bindpose': tuple(bindpose),
@@ -273,13 +273,13 @@ def read(data):
       # i know normalizeframeweights() sets them to an equally spaced range
       (weight,),data = unpack.unpackstruct('<f', data)
       frame['weight'] = weight
-      vertices,data = unpackn(unpackfloat3, vertcount, data)
+      vertices,data = unpackarray(unpackfloat3, vertcount, data)
       frame['vertices'] = vertices
       if hasnormals:
-        normals,data = unpackn(unpackfloat3, vertcount, data)
+        normals,data = unpackarray(unpackfloat3, vertcount, data)
         frame['normals'] = normals
       if hastangents:
-        tangents,data = unpackn(unpackfloat3, vertcount, data)
+        tangents,data = unpackarray(unpackfloat3, vertcount, data)
         frame['tangents'] = tangents
       blendshape.append(frame)
     blendshapes[name.decode('utf-8')] = blendshape
