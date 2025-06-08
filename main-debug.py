@@ -6,7 +6,7 @@ import pprint
 import re
 
 import resonitepackage
-import readfrdt
+import frdt
 
 packagename = 'Redprint Manager 2.4.zip'
 
@@ -19,7 +19,7 @@ del mainrecord['assetManifest']
 #pprint.pprint(mainrecord)
 
 mainfrdt = package.getasset(mainrecord['assetUri'])
-tree = readfrdt.readfrdt(mainfrdt)
+tree = frdt.read(mainfrdt)
 
 # get a list of all ids of things and where they are
 # and almost everything has an id

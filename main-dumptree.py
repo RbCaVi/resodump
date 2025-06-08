@@ -3,7 +3,6 @@
 import json
 
 import resonitepackage
-import readfrdt
 
 packagename = 'Redprint Manager 2.4.zip'
 
