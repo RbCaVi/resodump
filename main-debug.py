@@ -9,6 +9,7 @@ import resonitepackage
 import frdt
 
 packagename = 'Redprint Manager 2.4.zip'
+packagename = 'out/inventory-tool.resonitepackage'
 
 package = resonitepackage.ResonitePackage(packagename)
 mainrecord = package.getmainrecord()

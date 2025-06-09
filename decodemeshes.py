@@ -7,7 +7,10 @@ import json
 import resonitepackage
 import meshx
 
-with resonitepackage.ResonitePackage('Redprint Manager 2.4.zip') as package:
+packagename = 'Redprint Manager 2.4.zip'
+packagename = 'out/inventory-tool.resonitepackage'
+
+with resonitepackage.ResonitePackage(packagename) as package:
   for assethash in package.assetlist():
     print('trying', assethash)
     data = package.getasset(assethash)
