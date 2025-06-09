@@ -191,8 +191,8 @@ def processvalue2(v):
     if v.startswith('###') and v.endswith('###'):
       return idmap[v[3:-3]]
     if v.startswith('##@') and v.endswith('###'):
-      assethashes[v[3:-3]] = hex(0x100000000 + hash(v[3:-3]))[3:] * 2
-      return '@packdb://' + assethashes[v[3:-3]]
+      assethashes[v[3:-3]] = hex(0x20000000000000000 +hash(v[3:-3]))[3:] * 4
+      return '@packdb:///' + assethashes[v[3:-3]]
   return v
 
 import json
@@ -281,7 +281,7 @@ with resonitepackage.ResonitePackage('out.resonitepackage', 'w') as package:
       package.addasset(h, data)
       assetmanifest.append({'hash': h, 'bytes': len(data)})
   maindata = frdt.write(out)
-  mainhash = hex(0x100000000 + hash(maindata))[3:] * 2
+  mainhash = hex(0x20000000000000000 +hash(maindata))[3:] * 4
   package.addasset(mainhash, maindata)
   mainrecord['assetManifest'] = assetmanifest
   mainrecord['assetUri'] = 'packdb:///' + mainhash
