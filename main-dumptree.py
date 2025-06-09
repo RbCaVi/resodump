@@ -1,4 +1,4 @@
-# dump a .resonitepackage's main object to tree.json
+# dump a .resonitepackage's main object to out/tree.json
 
 import json
 
@@ -14,5 +14,5 @@ import pprint
 
 #pprint.pprint(package.getmainrecord())
 
-with open('tree.json', 'w') as f:
+with open('out/tree.json', 'w') as f:
   json.dump(tree, f)

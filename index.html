@@ -237,7 +237,7 @@
 			return '' + x;
 		}
 
-    fetch("tree.json")
+    fetch("out/tree.json")
 		.then(r => r.text())
 		.then(text => text.replace(/:\s*Infinity/g,":1e1000").replace(/Infinity\s*,/g,"1e1000,")) // python json encoder....
 		.then(JSON.parse)
