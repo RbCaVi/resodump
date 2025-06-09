@@ -238,7 +238,7 @@ import frdt
 import resonitepackage
 import datetime
 
-now = datetime.datetime.now(datetime.timezone.utc).isoformat()[:-6] + 'Z'
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()[:-6] + 'Z' # snip off the +00:00 at the end to match the format from resonite
 me = 'U-1YuDa214TQG'
 
 mainrecord = {
@@ -273,6 +273,95 @@ mainrecord = {
 }
 
 assetmanifest = []
+
+import meshx
+
+with open('out/invside.meshx', 'wb') as f:
+  mesh = {
+    'vertices': [
+      (-0.1, -0.1, -0.1),
+      (-0.3, -0.1, -0.1),
+      (-0.1,  0.1, -0.1),
+      (-0.3,  0.1, -0.1),
+      (-0.1, -0.1,  0.1),
+      (-0.3, -0.1,  0.1),
+      (-0.1,  0.1,  0.1),
+      (-0.3,  0.1,  0.1),
+    ],
+    'meshes': [[
+      (0, 1, 3),
+      (0, 2, 3),
+      (4, 5, 7),
+      (4, 6, 7),
+      (0, 1, 5),
+      (0, 4, 5),
+      (2, 3, 7),
+      (2, 6, 7),
+      (0, 2, 6),
+      (0, 4, 6),
+      (1, 3, 7),
+      (1, 5, 7),
+    ]],
+  }
+  f.write(meshx.write(mesh))
+
+with open('out/slot.meshx', 'wb') as f:
+  mesh = {
+    'vertices': [
+      (-0.125, -0.125, -0.125),
+      ( 0.125, -0.125, -0.125),
+      (-0.125,  0.125, -0.125),
+      ( 0.125,  0.125, -0.125),
+      (-0.125, -0.125,  0.125),
+      ( 0.125, -0.125,  0.125),
+      (-0.125,  0.125,  0.125),
+      ( 0.125,  0.125,  0.125),
+    ],
+    'meshes': [[
+      (0, 1, 3),
+      (0, 2, 3),
+      (4, 5, 7),
+      (4, 6, 7),
+      (0, 1, 5),
+      (0, 4, 5),
+      (2, 3, 7),
+      (2, 6, 7),
+      (0, 2, 6),
+      (0, 4, 6),
+      (1, 3, 7),
+      (1, 5, 7),
+    ]],
+  }
+  f.write(meshx.write(mesh))
+
+with open('out/tool.meshx', 'wb') as f:
+  mesh = {
+    'vertices': [
+      (-0.125, -0.125, -0.125),
+      ( 0.125, -0.125, -0.125),
+      (-0.125,  0.125, -0.125),
+      ( 0.125,  0.125, -0.125),
+      (-0.125, -0.125,  0.125),
+      ( 0.125, -0.125,  0.125),
+      (-0.125,  0.125,  0.125),
+      ( 0.125,  0.125,  0.125),
+    ],
+    'meshes': [[
+      (0, 1, 3),
+      (0, 2, 3),
+      (4, 5, 7),
+      (4, 6, 7),
+      (0, 1, 5),
+      (0, 4, 5),
+      (2, 3, 7),
+      (2, 6, 7),
+      (0, 2, 6),
+      (0, 4, 6),
+      (1, 3, 7),
+      (1, 5, 7),
+    ]],
+  }
+  f.write(meshx.write(mesh))
 
 with resonitepackage.ResonitePackage('out.resonitepackage', 'w') as package:
   for a,h in assethashes.items():
