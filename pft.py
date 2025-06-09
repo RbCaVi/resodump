@@ -1,7 +1,7 @@
 # protoflux text format ("assembly")
 
 # <code> = <stmt>*
-# <stmt> = (<cname> (',' <cname>)* '=') <fname> <args>? <block>*
+# <stmt> = (<cname> (',' <cname>)* '=') <fname> <args> <block>*
 # <cname> = <name> | '@' <name>
 # <fname> = <name> | '[' <name> ']'
 # <args> = '(' ')' | '(' <arg> (',' <arg>)* ')'

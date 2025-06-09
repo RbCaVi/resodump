@@ -1,5 +1,5 @@
 
-      user = Get Active User Self
+      user = Get Active User Self ()
       userroot = User Root Slot (user)
       inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
       exists = Not Null (inventory)
