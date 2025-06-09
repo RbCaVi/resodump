@@ -1,0 +1,57 @@
+
+      user = Get Active User Self
+      userroot = User Root Slot (user)
+      inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
+      exists = Not Null (inventory)
+      existsi = Zero One (exists)
+      /*
+      Impulse Multiplexer (existsi)
+        0: {
+          dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+          X (0)
+        }
+        1: {
+          X (1)
+        }
+        */
+      // i'm not sure about this syntax
+      // maybe have a switch + return syntax that automatically does this?
+      
+      invtop = Switch (existsi)
+        0: {
+          dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+          Return (dupinv)
+        }
+        1: {
+          Return (inventory)
+        }
+      
+      // there is the issue of more complex flow control though
+      // maybe fork and join?
+      /*
+      Fork (x)
+        0: {Return 1 @1}
+        1: {Return 2 @2}
+        2: {Return "nope" @3}
+      n = Join (@1, @2)
+        {
+          s = To String (n)
+          Return s @12
+        }
+      s = Join (@12, @3)
+        {
+          Return s
+        }
+      */
+      // this is weird syntax (not good imo tbh frfr)
+      // though i don't think such structures are very necessary
+      // also i could just use If and Conditional here
+      // and i don't even need i - it's the same as existsi
+      // i could make an explicit continuation syntax
+      // can i just connect multiple impulses into one impulse input?
+      // no, i need i
+      // actually yes - i = existsi
+      //i = Impulse Demultiplexer <X>
+      invtop,_inputcount = Multiplex (i, dupinv, inventory)
+      inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
+      Return (inv)
