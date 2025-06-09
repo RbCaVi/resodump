@@ -7,7 +7,7 @@ def generateids():
     assert i < 0x100000000 # a reasonable limit, right? 4 billion? surely
     # like i guess i could write uuids properly
     # but nobody's going to use even a million slots right?
-    yield hex(0x100000000 + i)[3:] + '-0000-0000-000000000000'
+    yield hex(0x100000000 + i)[3:] + '-0000-0000-0000-000000000000'
 
 ids = generateids()
 
