@@ -363,7 +363,7 @@ with open('out/tool.meshx', 'wb') as f:
   }
   f.write(meshx.write(mesh))
 
-with resonitepackage.ResonitePackage('out.resonitepackage', 'w') as package:
+with resonitepackage.ResonitePackage('out/inventory-tool.resonitepackage', 'w') as package:
   for a,h in assethashes.items():
     with open(a, 'rb') as f:
       data = f.read()
