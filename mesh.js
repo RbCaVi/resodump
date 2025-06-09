@@ -216,7 +216,7 @@ function toShape(mesh) {
   const idxs = [].concat(...[].concat(...mesh.meshes));
   const size = idxs.length;
   const aVertexPosition_ = idxs.map(i => mesh.vertices[i]);
-  const aVertexNormal = idxs.map(i => mesh.normals[i]);
+  const aVertexNormal = idxs.map(i => 'normals' in mesh ? mesh.normals[i] : [0, 0, 0]);
   const maxcoords = aVertexPosition_.reduce((p1, p2) => p1.map((_, i) => Math.max(p1[i], p2[i])));
   const mincoords = aVertexPosition_.reduce((p1, p2) => p1.map((_, i) => Math.min(p1[i], p2[i])));
   const largestdim = Math.max(...maxcoords.map((_, i) => maxcoords[i] - mincoords[i]));
