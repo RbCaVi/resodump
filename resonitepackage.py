@@ -52,7 +52,7 @@ class ResonitePackage:
   
   def setmainrecord(self, data):
     with self.zipfile.open('R-Main.record', 'w') as recordf:
-      json.dump(data, recordf)
+      recordf.write(json.dumps(data).encode('utf-8'))
   
   def __exit__(self, type, value, tb):
     self.zipfile.close()
