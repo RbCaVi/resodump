@@ -70,6 +70,8 @@
 #       weight - float
 #       vertices, normals, tangents - same as top level
 
+import struct
+
 import unpack
 import lz4
 
@@ -181,6 +183,8 @@ def read(data):
   header,data = unpackheader(data)
   version = header['version']
   vertcount = header['vertexcount']
+  
+  print(data)
 
   #print(header)
   #print(vertcount, 'vertices')
@@ -212,13 +216,13 @@ def read(data):
   for dim in header['uvdims']:
     if dim == 2:
       uv,data = unpackarray(unpackfloat2, vertcount, data)
-      uvs.append(uv))
+      uvs.append(uv)
     elif dim == 3:
       uv,data = unpackarray(unpackfloat3, vertcount, data)
-      uvs.append(uv))
+      uvs.append(uv)
     elif dim == 4:
       uv,data = unpackarray(unpackfloat4, vertcount, data)
-      uvs.append(uv))
+      uvs.append(uv)
     else:
       print('weird uv dimension:', dim)
   out['uvs'] = uvs
@@ -229,7 +233,7 @@ def read(data):
       meshtype,data = unpackstring(data)
       if meshtype == b'':
         continue
-      assert meshtype in [b'Points', b'Triangles'], 'unknown mesh type: ' + meshtype
+      assert meshtype in [b'Points', b'Triangles'], 'unknown mesh type: ' + str(meshtype)
       primcount,data = unpack.unpack7bit(data)
       if meshtype == b'Triangles':
         tris,data = unpackarray(unpackint3, primcount, data)
@@ -356,7 +360,7 @@ def write(meshx):
   data += pack7bit(len(bones))
   data += pack7bit(len(blendshapes))
   data += pack7bit(len(uvs))
-  data += bytes([len(uv[0]) for i,uv in meshx['uvs']]) # assuming there are actually vertices :)
+  data += bytes([len(uv[0]) for i,uv in uvs]) # assuming there are actually vertices :)
   
   meshdata = b''
   
@@ -388,7 +392,8 @@ def write(meshx):
     # i'm assuming you can tell the mesh type from components per primitive
     assert len(mesh[0]) in [1, 3], f'unrecognized mesh primitive with {len(mesh[0])} points per primitive'
     meshtype = {1: 'Points', 3: 'Triangles'}[len(mesh[0])]
-    meshdata += packstring(meshtype)
+    meshdata += packstring(meshtype.encode('utf-8'))
+    meshdata += pack7bit(len(mesh))
     if meshtype == 'Points':
       meshdata += packarray(packint, mesh)
     elif meshtype == 'Triangles':
@@ -417,4 +422,4 @@ def write(meshx):
   data += struct.pack('<b', 0) # no compression
   data += meshdata
   
-  return meshdata
+  return data
