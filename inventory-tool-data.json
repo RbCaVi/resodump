@@ -67,6 +67,7 @@
         "Mesh": "###toolmesh###",
         "Materials": [
           {
+            "ID": "###id###",
             "Data": "###unlitgrey###"
           }
         ],
@@ -117,6 +118,7 @@
                 "Mesh": "###inventorymesh###",
                 "Materials": [
                   {
+                    "ID": "###id###",
                     "Data": "###unlitgrey###"
                   }
                 ],
@@ -146,6 +148,31 @@
             ]
           },
           {"Name": "Item Slot", "id": "inventoryslot",
+            "Components": [
+              {"type": "[FrooxEngine]FrooxEngine.MeshCollider",
+                "Offset": [0, 0, 0],
+                "Type": "NoCollision",
+                "Mass": 1,
+                "CharacterCollider": false,
+                "IgnoreRaycasts": false,
+                "Mesh": "###slotmesh###",
+                "Sidedness": "Front",
+                "ActualSpeculativeMargin": null
+              },
+              {"type": "[FrooxEngine]FrooxEngine.MeshRenderer",
+                "Mesh": "###slotmesh###",
+                "Materials": [
+                  {
+                    "ID": "###id###",
+                    "Data": "###slotyellow###"
+                  }
+                ],
+                "MaterialPropertyBlocks": [],
+                "ShadowCastMode": "On",
+                "MotionVectorMode": "Object",
+                "SortingOrder": 0
+              }
+            ],
             "Children": [
               {"Name": "Code",
                 "Children": [
@@ -163,15 +190,15 @@
   },
   "Assets": [
     {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "inventorymesh",
-      "URL": "##@invside.meshx###",
+      "URL": "##@out/invside.meshx###",
       "Readable": false
     },
     {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "slotmesh",
-      "URL": "##@slot.meshx###",
+      "URL": "##@out/slot.meshx###",
       "Readable": false
     },
     {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "toolmesh",
-      "URL": "##@tool.meshx###",
+      "URL": "##@out/tool.meshx###",
       "Readable": false
     },
     {"type": "[FrooxEngine]FrooxEngine.UnlitMaterial", "id": "slotyellow",
