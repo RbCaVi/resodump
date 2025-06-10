@@ -222,24 +222,25 @@ def pass4(tokens):
     out.append(token)
   return out
 
+def parse(s):
+  tokens = lex(s)
+  tokens2 = pass1(tokens)
+  tokens3 = pass2(tokens2)
+  tokens4 = pass3(tokens3)
+  tokens5 = pass4(tokens4)
+
+  return tokens5
+
 #n = ''.join(n).lower()
 
 with open('l.pft') as f:
   s = f.read()
 
-tokens = lex(s)
-
-tokens2 = pass1(tokens)
-
-tokens3 = pass2(tokens2)
-
-tokens4 = pass3(tokens3)
-
-tokens5 = pass4(tokens4)
-
 import pprint
 
-pprint.pprint(tokens5)  
+parsed = parse(s)
+
+pprint.pprint(parsed)
 
 def w(ss):
   for s in ss:
@@ -249,4 +250,4 @@ def w(ss):
     else:
       print(s)
 
-w(tokens5)
+w(parsed)
