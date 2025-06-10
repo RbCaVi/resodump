@@ -125,10 +125,10 @@ def pass1(tokens):
       assert False, 'error: unmatched ]]'
     elif token[0] == '<':
       token,tokens = gettoken(tokens)
-      assert token[0] == 'name', f'error: < before non name: {token}'
+      assert token[0] in ['name', 'int', 'float', 'string'], f'error: < before non name: {token}'
       close,tokens = gettoken(tokens)
       assert close[0] == '>', f'error: no matching >: {close}'
-      token[0] = 'tag'
+      token = ['tag', token[0], token[1]]
     elif token[0] == '>':
       assert False, 'error: unmatched >'
     elif token[0] == '=':
