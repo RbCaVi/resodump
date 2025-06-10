@@ -26,7 +26,7 @@ RawDataTool Events <tool> ()
         bbox = Compute Bounding Box (item, false, islot, null)
         _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
         sizex,sizey,sizez = Unpack xyz (size)
-        maxsize = Value Max Multi (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
+        maxsize = Max (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
         ratio = Div (0.2, maxsize)
         scale = Min (1, ratio)
         ipos,_rot,iscale = Local Transform (item)
