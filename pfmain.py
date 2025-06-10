@@ -6,9 +6,9 @@ with open('l.pft') as f:
 
 import pprint
 
-parsed = parse(s)
+code = pft.parse(s)
 
-pprint.pprint(parsed)
+#pprint.pprint(code)
 
 def w(ss):
   for s in ss:
@@ -18,4 +18,6 @@ def w(ss):
     else:
       print(s)
 
-w(parsed)
+#w(code)
+
+v = pfc.findvars(code)
