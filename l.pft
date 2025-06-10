@@ -1,0 +1,56 @@
+RawDataTool Events <tool> ()
+  PrimaryPressed: {
+    _inventory,invtop = [GetInventory] ()
+    _found,opened = Read Dynamic Variable (invtop, "RbCaViInventory/Opened")
+    vopened2 = NOT (opened)
+    Write Dynamic Variable (invtop, "RbCaViInventory/Opened", opened2)
+      OnSuccess: {
+        Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+      }
+  }
+  SecondaryPressed: {
+    inventory,invtop = [GetInventory] ()
+    islot = Duplicate Slot ([[Inventory Slot Template]], inventory)
+    side = Tool Equipping Side ([[Tool]])
+    hand = Get Side (LeftHand, side)
+    user = Get Active User Self
+    grabber = Get User Grabber (user, hand)
+    gslot = Get Slot (grabber)
+    itemholder = Find Child By Name (gslot, holder, true, true, 0)
+    itemcount = Children Count (holder)
+    i = For (itemcount, true)
+      LoopIteration: {
+        item = Get Child (itemholder, i)
+        Set Parent (item, islot, true)
+        Set Local Position (item, [0,0,0])
+        bbox = Compute Bounding Box (item, false, islot, null)
+        _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
+        sizex,sizey,sizez = Unpack xyz (size)
+        maxsize = Value Max Multi (sizex, sizey, sizez) // TODO: change to square root pythagorean theorem radius
+        ratio = Div (0.2, maxsize)
+        scale = Min (1, ratio)
+        ipos,_rot,iscale = Local Transform (item)
+        iscale2 = Mul (scale, iscale)
+        ipos2 = Mul (scale, ipos)
+        ipos3 = Mul (-1, ipos)
+        Set Local Position (item, ipos3)
+        Set Local Scale (item, iscale2)
+      }
+    Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+  }
+
+[GetInventory]: {
+  user = Get Active User Self
+  userroot = User Root Slot (user)
+  inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
+  exists = Not Null (inventory)
+  existsi = Zero One (exists)
+  If (exists)
+    OnFalse: {
+      dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+      X (0)
+    }
+  invtop,_inputcount = Conditional (exists, dupinv, inventory)
+  inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
+  Return (inv)
+}

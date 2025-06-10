@@ -113,10 +113,10 @@ Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference
       invtop = Switch (existsi)
         0: {
           dupinv = Duplicate Slot ([[Inventory Template]], userroot)
-          Return dupinv
+          Return (dupinv)
         }
         1: {
-          Return inventory
+          Return (inventory)
         }
       */
       // there is the issue of more complex flow control though
@@ -147,4 +147,4 @@ Tool {Grabbable, RawDataTool} // TODO? Change TipReference and LocalTipReference
       i = Impulse Demultiplexer <X>
       invtop,_inputcount = Multiplex (i, dupinv, inventory)
       inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
-      return inv
+      Return (inv)

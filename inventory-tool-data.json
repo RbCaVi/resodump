@@ -1,5 +1,5 @@
 {
-  "Object": {"Name": "Inventory Tool",
+  "Object": {"Name": "Inventory Tool", "id": "tool",
     "Components": [
       {"type": "[FrooxEngine]FrooxEngine.RawDataTool",
         "_equipLink": null,
