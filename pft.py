@@ -187,7 +187,7 @@ def pass3(tokens):
         tag = None
       token = out.pop()
       assert token[0] in ['name', 'fname'], f'error: non name before =: {token}'
-      func = token[1]
+      func = token
       if len(out) > 0 and out[-1][0] == 'assign':
         token = out.pop()
         vars_ = token[1]
