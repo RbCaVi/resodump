@@ -14,9 +14,10 @@ def walk(code, f, path = ()):
 
 def findvars(code):
   vars_ = {}
+  vids = itertools.count()
   def f(stmt, path):
     if stmt[1] is not None:
-      vars_[path] = stmt[1]
+      vars_[path] = [(vn, ['var', next(vids)]) for vn in stmt[1]]
   walk(code, f)
   return vars_
 
@@ -37,13 +38,12 @@ constanttypes = {
   'LeftHand': 'BodyNode',
 }
 
-def resolvevar(var, varnames, vars_, vpath):
+def resolvevar(var, vars_, vpath):
   if var[0] != 'name':
     return var
-  paths = sorted(filter(lambda p: inscope(vpath, p), varnames.keys()), reverse = True)
+  paths = sorted(filter(lambda p: inscope(vpath, p), vars_.keys()), reverse = True)
   for path in paths:
-    for varname,varid in zip(varnames[path], vars_[path]):
-      print(path, var, varname)
+    for varname,varid in vars_[path]:
       if varname == var:
         return varid
   name = ' '.join(var[1])
@@ -55,16 +55,16 @@ def resolvevar(var, varnames, vars_, vpath):
     return ['literal', 'null', None]
   if name in constanttypes:
     return ['literal', constanttypes[name], name]
-  assert False, f'{var}, {vpath}, {paths}, {[varnames[path] for path in paths]}, {[vars_[path] for path in paths]}'
+  assert False, f'{var}, {vpath}, {paths}, {[vars_[path] for path in paths]}'
 
-def resolvevars(code, varnames):
+def resolvevars(code, vars_):
   # basically search backwards in the order they appear in the program
   # include statements before and their subblocks
   # and statements above (not their subblocks)
   # and statements before statements above and their subblocks
-  vids = itertools.count()
-  vars_ = {path:[['var', next(vids)] for _ in varnames] for path,varnames in varnames.items()}
+  # should be all statements before except in adjacent subblocks
   def f(stmt, path):
-    stmt[4] = [resolvevar(v, varnames, vars_, path) for v in stmt[4]]
+    if stmt[1] is not None:
+      stmt[1] = [vi for vn,vi in vars_[path]]
+    stmt[4] = [resolvevar(v, vars_, path) for v in stmt[4]]
   walk(code, f)
-  return vars_

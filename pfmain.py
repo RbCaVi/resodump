@@ -20,8 +20,8 @@ def w(ss):
 
 #w(code)
 
-varnames = pfc.findvars(code)
+vars_ = pfc.findvars(code)
 
-pfc.resolvevars(code, varnames)
+pfc.resolvevars(code, vars_)
 
 pprint.pprint(code)
