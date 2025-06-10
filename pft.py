@@ -139,7 +139,7 @@ def pass1(tokens):
         out.pop()
         token = out.pop()
         assert token[0] in ['name', 'cname'], f'error: non name before , and =: {token}'
-        names.append(token)
+        names.insert(0, token)
       token = ['assign', names]
     if token[0] in ['float', 'int', 'string', 'rname']:
       token = ['literal', token[0], token[1]]
@@ -212,7 +212,7 @@ def pass4(tokens):
       block = []
       while len(out) > 0 and out[-1][0] not in ['block', 'subblock']:
         token = out.pop()
-        block.append(token)
+        block.insert(0, token)
       token = out.pop()
       token.append(block)
       if token[0] == 'subblock' and len(out) > 0 and out[-1][0] == 'stmt':
