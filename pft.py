@@ -139,6 +139,7 @@ def pass1(tokens):
         out.pop()
         token = out.pop()
         assert token[0] in ['name', 'cname'], f'error: non name before , and =: {token}'
+        assert token not in names, f'error: duplicate variable: {token}'
         names.insert(0, token)
       token = ['assign', names]
     if token[0] in ['float', 'int', 'string', 'rname']:
