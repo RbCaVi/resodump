@@ -1,3 +1,5 @@
+import itertools
+
 import pft
 import pfc
 
@@ -25,3 +27,14 @@ vars_ = pfc.findvars(code)
 pfc.resolvevars(code, vars_)
 
 pprint.pprint(code)
+
+def findfuncs(code):
+  funcs = []
+  def f(stmt, path):
+    funcs.append(stmt[2])
+  pfc.walk(code, f)
+  return funcs
+
+funcs = findfuncs(code)
+
+ufuncs = [fn for fn,_ in itertools.groupby(sorted(funcs))]
