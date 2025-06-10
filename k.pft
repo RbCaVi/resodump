@@ -1,3 +1,4 @@
+user = Get Active User Self ()
 _child = Slot Children Events <inventoryslot> (user)
   OnChildRemoved: {
     Destroy Slot ([[Inventory Slot]], false, true)
