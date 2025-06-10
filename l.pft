@@ -13,7 +13,7 @@ RawDataTool Events <tool> ()
     islot = Duplicate Slot ([[Inventory Slot Template]], inventory)
     side = Tool Equipping Side ([[Tool]])
     hand = Get Side (LeftHand, side)
-    user = Get Active User Self
+    user = Get Active User Self ()
     grabber = Get User Grabber (user, hand)
     gslot = Get Slot (grabber)
     itemholder = Find Child By Name (gslot, holder, true, true, 0)
@@ -39,8 +39,8 @@ RawDataTool Events <tool> ()
     Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
   }
 
-[GetInventory]: {
-  user = Get Active User Self
+Function () GetInventory: {
+  user = Get Active User Self ()
   userroot = User Root Slot (user)
   inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
   exists = Not Null (inventory)

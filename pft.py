@@ -246,8 +246,6 @@ def w(ss):
     if s[0] == 'stmt':
       for subblock in s[5]:
         w(subblock[2])
-    elif s[0] == 'subblock':
-      w(s[2])
     else:
       print(s)
 
