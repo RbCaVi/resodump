@@ -1,6 +1,8 @@
 # pft compiler
 # or at least intermediate representation
 
+import itertools
+
 def walk(code, f, path = ()):
   for i1,s in enumerate(code):
     if s[0] == 'stmt':
@@ -15,5 +17,54 @@ def findvars(code):
   def f(stmt, path):
     if stmt[1] is not None:
       vars_[path] = stmt[1]
+  walk(code, f)
+  return vars_
+
+def evenmatch(path1, path2):
+  return len([*itertools.takewhile(lambda x: x[0] == x[1], zip(path1, path2))]) % 2 == 0
+
+def inscope(path, checkpath):
+  # whether checkpath is in scope at path
+  # the condition is:
+  #   matches an even number of indices (ending on a subblock index) at the start
+  #   and the first non matching one is less
+  # or
+  #   is a substring
+  return (path > checkpath and evenmatch(path, checkpath)) or checkpath == path[:len(checkpath)]
+
+# map of constants to types
+constanttypes = {
+  'LeftHand': 'BodyNode',
+}
+
+def resolvevar(var, varnames, vars_, vpath):
+  if var[0] != 'name':
+    return var
+  paths = sorted(filter(lambda p: inscope(vpath, p), varnames.keys()), reverse = True)
+  for path in paths:
+    for varname,varid in zip(varnames[path], vars_[path]):
+      print(path, var, varname)
+      if varname == var:
+        return varid
+  name = ' '.join(var[1])
+  if name.lower() == 'true':
+    return ['literal', 'bool', True]
+  if name.lower() == 'false':
+    return ['literal', 'bool', False]
+  if name.lower() == 'null':
+    return ['literal', 'null', None]
+  if name in constanttypes:
+    return ['literal', constanttypes[name], name]
+  assert False, f'{var}, {vpath}, {paths}, {[varnames[path] for path in paths]}, {[vars_[path] for path in paths]}'
+
+def resolvevars(code, varnames):
+  # basically search backwards in the order they appear in the program
+  # include statements before and their subblocks
+  # and statements above (not their subblocks)
+  # and statements before statements above and their subblocks
+  vids = itertools.count()
+  vars_ = {path:[['var', next(vids)] for _ in varnames] for path,varnames in varnames.items()}
+  def f(stmt, path):
+    stmt[4] = [resolvevar(v, varnames, vars_, path) for v in stmt[4]]
   walk(code, f)
   return vars_

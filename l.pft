@@ -2,7 +2,7 @@ RawDataTool Events <tool> ()
   PrimaryPressed: {
     _inventory,invtop = [GetInventory] ()
     _found,opened = Read Dynamic Variable (invtop, "RbCaViInventory/Opened")
-    vopened2 = NOT (opened)
+    opened2 = NOT (opened)
     Write Dynamic Variable (invtop, "RbCaViInventory/Opened", opened2)
       OnSuccess: {
         Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
@@ -16,8 +16,8 @@ RawDataTool Events <tool> ()
     user = Get Active User Self ()
     grabber = Get User Grabber (user, hand)
     gslot = Get Slot (grabber)
-    itemholder = Find Child By Name (gslot, holder, true, true, 0)
-    itemcount = Children Count (holder)
+    itemholder = Find Child By Name (gslot, "holder", true, true, 0)
+    itemcount = Children Count (itemholder)
     i = For (itemcount, true)
       LoopIteration: {
         item = Get Child (itemholder, i)
@@ -48,7 +48,6 @@ Function () GetInventory: {
   If (exists)
     OnFalse: {
       dupinv = Duplicate Slot ([[Inventory Template]], userroot)
-      X (0)
     }
   invtop,_inputcount = Conditional (exists, dupinv, inventory)
   inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
