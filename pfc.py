@@ -2,11 +2,11 @@
 # or at least intermediate representation
 
 def walk(code, f, path = ()):
-  for s in code:
+  for i1,s in enumerate(code):
     if s[0] == 'stmt':
-      f(s, path)
-      for i,subblock in enumerate(s[5]):
-        walk(subblock[2], path + (i,))
+      f(s, path + (i1,))
+      for i2,subblock in enumerate(s[5]):
+        walk(subblock[2], f, path + (i1, i2))
     else:
       assert False, f'non statement in code: {s}'
 
