@@ -39,7 +39,7 @@ RawDataTool Events <tool> ()
     Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
   }
 
-Function () GetInventory: {
+Function () GetInventory: { // the arguments go before the function // i know it's weird, but it lets me not write an extra syntax rule
   user = Get Active User Self ()
   userroot = User Root Slot (user)
   inventory = Find Child By Tag (userroot, "RbCaViInventory", 0) // TODO: try dynamic variable containing inventory slot?
