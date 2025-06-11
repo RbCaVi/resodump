@@ -1,13 +1,13 @@
 # protoflux text format ("assembly")
 
 # <code> = <stmt>*
-# <stmt> = (<cname> (',' <cname>)* '=') <fname> <args> <block>*
-# <cname> = <name> | '@' <name>
+# <stmt> = (<iname> (',' <iname>)* '=') <fname> <args> <block>*
+# <iname> = <name> | '@' <name>
 # <fname> = <name> <tag>? | '[' <name> ']'
 # <tag> = '<' <name> '>'
 # <args> = '(' ')' | '(' <arg> (',' <arg>)* ')'
 # <block> = <name> ':' '{' <code> '}'
-# <arg> = <cname> | <literal>
+# <arg> = <iname> | <literal>
 # <literal> = <number> | <string> | '[' <number> (',' <number>*) ']' | '[[' <name> ']]'
 # <name> = <word>+
 # <word> = [/a-zA-Z_][/a-zA-Z_0-9]*
@@ -93,7 +93,7 @@ def pass1(tokens):
     if token[0] == '@':
       token,tokens = gettoken(tokens)
       assert token[0] == 'name', f'error: @ before non name: {token}'
-      token[0] = 'cname'
+      token[0] = 'iname'
     elif token[0] == '[':
       token,tokens = gettoken(tokens)
       if token[0] == 'name':
@@ -133,12 +133,12 @@ def pass1(tokens):
       assert False, 'error: unmatched >'
     elif token[0] == '=':
       token = out.pop()
-      assert token[0] in ['name', 'cname'], f'error: non name before =: {token}'
+      assert token[0] in ['name', 'iname'], f'error: non name before =: {token}'
       names = [token]
       while len(out) > 0 and out[-1][0] == ',':
         out.pop()
         token = out.pop()
-        assert token[0] in ['name', 'cname'], f'error: non name before , and =: {token}'
+        assert token[0] in ['name', 'iname'], f'error: non name before , and =: {token}'
         assert token not in names, f'error: duplicate variable: {token}'
         names.insert(0, token)
       token = ['assign', names]
@@ -157,7 +157,7 @@ def pass2(tokens):
       if token[0] == ')':
         token = ['args', []]
       else:
-        assert token[0] in ['name', 'cname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
+        assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
         args = [token]
         while True:
           token,tokens = gettoken(tokens)
@@ -165,7 +165,7 @@ def pass2(tokens):
             break
           assert token[0] == ',', f'error: expected comma after args: {args}'
           token,tokens = gettoken(tokens)
-          assert token[0] in ['name', 'cname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
+          assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
           args.append(token)
         token = ['args', args]
     elif token[0] == ')':
