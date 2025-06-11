@@ -80,20 +80,21 @@ nodes = {
     'out': '$',
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMin',
   },
-  ('Max',): [ # list means try any of these
-    {
-      'tag': 'type',
-      'in': [['$', 'A'], ['$', 'B']],
-      'out': '$',
-      'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMax',
-    },
-    {
-      'tag': 'type',
-      'in': [['*$', 'Operands']], # * means list of inputs
-      'out': '$',
-      'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMaxMulti',
-    },
-  ],
+  ('Max',): {
+    'tag': 'type',
+    'forms': [ # max has multiple forms # so do mul and min, but i was lazy to do them
+      {
+        'in': [['$', 'A'], ['$', 'B']],
+        'out': '$',
+        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMax',
+      },
+      {
+        'in': [['*$', 'Operands']], # * means list of inputs
+        'out': '$',
+        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMaxMulti',
+      },
+    ],
+  },
   ('Mul',): {
     'tag': 'type',
     'in': [['$', 'A'], ['$', 'B']],
