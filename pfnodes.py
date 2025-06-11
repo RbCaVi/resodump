@@ -23,12 +23,12 @@ nodes = {
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueDiv',
   },
   ('Duplicate', 'Slot'): {
-    'continuations': True, # a node with continuations: True must have named output arguments and a continuation out called Next
+    'impulses': True, # a node with impulses: True must have named output arguments and an impulse out called Next
     'in': [['Slot', 'Template'], ['Slot', 'OverrideParent']],
     'out': [['Slot', 'Duplicate']],
   },
   ('Dynamic', 'Impulse', 'Trigger'): {
-    'continuations': True,
+    'impulses': True,
     'in': [['string', 'Tag'], ['Slot', 'TargetHierarchy'], ['bool', 'ExcludeDisabled']],
     'out': 'int',
   },
@@ -41,7 +41,7 @@ nodes = {
     'out': 'Slot',
   },
   ('For',): {
-    'continuations': ['LoopEnd', ['LoopStart', 'LoopIteration']], # LoopEnd connects to the next statement
+    'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration']], # LoopEnd connects to the next statement
     'in': [['int', 'Count'], ['bool', 'Reverse ']],
     'out': [['int', 'iteration']],
   },
@@ -66,7 +66,7 @@ nodes = {
     'out': 'Grabber',
   },
   ('If',): {
-    'continuations': [True, ['OnTrue', 'OnFalse']], # both branches connect to the next statement
+    'impulses': [True, ['OnTrue', 'OnFalse']], # both branches connect to the next statement
     'in': [['bool', 'Condition']],
     'out': [],
   },
@@ -113,7 +113,7 @@ nodes = {
   },
   ('RawDataTool', 'Events'): {
     'tag': ['ref', 'RawDataTool', 'Tool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
-    'continuations': [False, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement
+    'impulses': [False, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement
     'in': [],
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction.Tools.RawDataToolEvents',
@@ -128,17 +128,17 @@ nodes = {
     }
   },
   ('Set', 'Local', 'Position'): {
-    'continuations': True,
+    'impulses': True,
     'in': [['Slot', 'Instance'], ['float3', 'Position']],
     'out': [],
   },
   ('Set', 'Local', 'Scale'): {
-    'continuations': True,
+    'impulses': True,
     'in': [['Slot', 'Instance'], ['float3', 'Scale']],
     'out': [],
   },
   ('Set', 'Parent'): {
-    'continuations': True,
+    'impulses': True,
     'in': [['Slot', 'Instance'], ['Slot', 'NewParent'], ['bool', 'PreserveGlobalPosition']],
     'out': [],
   },
@@ -157,27 +157,27 @@ nodes = {
   },
   ('Write', 'Dynamic', 'Variable'): {
     'tag': 'type',
-    'continuations': ['OnSuccess', ['OnNotFound', 'OnFailed']], # i'm assuming you would want to continue from OnSuccess usually
+    'impulses': ['OnSuccess', ['OnNotFound', 'OnFailed']], # i'm assuming you would want to continue from OnSuccess usually
     'in': [['Slot', 'Target'], ['string', 'Path'], ['$', 'Value']],
     'out': [],
   },
   ('Return',): {
-    'continuations': 'builtin', # return a value from a block # builtin, not a real node
+    'impulses': 'builtin', # return a value from a block # builtin, not a real node
   },
   ('Function',): {
-    'continuations': 'builtin', # define a function that is used with an impulse multiplexer/demultiplexer
+    'impulses': 'builtin', # define a function that is used with an impulse multiplexer/demultiplexer
   },
   ('Continue',): {
-    'continuations': 'builtin', # return current impulse explicitly
+    'impulses': 'builtin', # return current impulse explicitly
   },
   ('Join',): {
-    'continuations': 'builtin', # join two impulses into one - like impulse multiplexer with no index
+    'impulses': 'builtin', # join two impulses into one - like impulse multiplexer with no index
   },
   ('Impulse', 'Multiplexer'): {
-    'continuations': 'builtin', # special handling
+    'impulses': 'builtin', # special handling
   },
   ('Impulse', 'Demultiplexer'): {
-    'continuations': 'builtin', # special handling
+    'impulses': 'builtin', # special handling
   },
 }
 
