@@ -192,7 +192,7 @@ def pass3(tokens):
         token = out.pop()
         vars_ = token[1]
       else:
-        vars_ = None
+        vars_ = []
       token = ['stmt', vars_, func, tag, args, []]
     out.append(token)
   return out

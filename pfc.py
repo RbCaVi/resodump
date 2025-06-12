@@ -16,8 +16,7 @@ def findvars(code):
   vars_ = {}
   vids = itertools.count()
   def f(stmt, path):
-    if stmt[1] is not None:
-      vars_[path] = [(vn, ['var', next(vids)]) for vn in stmt[1]]
+    vars_[path] = [(vn, ['var', next(vids), vn[0]]) for vn in stmt[1]]
   walk(code, f)
   return vars_
 
@@ -63,8 +62,8 @@ def resolvevars(code, vars_):
   # and statements above (not their subblocks)
   # and statements before statements above and their subblocks
   # should be all statements before except in adjacent subblocks
+  # this disallows cyclic impulse and data chains
   def f(stmt, path):
-    if stmt[1] is not None:
-      stmt[1] = [vi for vn,vi in vars_[path]]
+    stmt[1] = [vi for vn,vi in vars_[path]]
     stmt[4] = [resolvevar(v, vars_, path) for v in stmt[4]]
   walk(code, f)
