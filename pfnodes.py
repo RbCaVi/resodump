@@ -114,7 +114,7 @@ nodes = {
   },
   ('RawDataTool', 'Events'): {
     'tag': ['ref', 'RawDataTool', 'Tool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
-    'impulses': [False, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement
+    'impulses': [None, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement # also no impulse input
     'in': [],
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction.Tools.RawDataToolEvents',
@@ -162,23 +162,25 @@ nodes = {
     'in': [['Slot', 'Target'], ['string', 'Path'], ['$', 'Value']],
     'out': [],
   },
-  ('Return',): {
-    'impulses': 'builtin', # return a value from a block # builtin, not a real node
-  },
-  ('Function',): {
-    'impulses': 'builtin', # define a function that is used with an impulse multiplexer/demultiplexer
-  },
   ('Continue',): {
-    'impulses': 'builtin', # return current impulse explicitly
+    'impulses': True, # return current impulse explicitly
+  },
+  # i'll deal with these in their own way
+  # because they have varying numbers of impulse inputs/outputs
+  ('Impulse', 'Multiplexer'): {
+    'impulses': 'builtin',
+  },
+  ('Impulse', 'Demultiplexer'): {
+    'impulses': 'builtin',
   },
   ('Join',): {
     'impulses': 'builtin', # join two impulses into one - like impulse multiplexer with no index
   },
-  ('Impulse', 'Multiplexer'): {
-    'impulses': 'builtin', # special handling
+  ('Return',): {
+    'impulses': 'builtin', # return a value from a block # does not have an impulse output?
   },
-  ('Impulse', 'Demultiplexer'): {
-    'impulses': 'builtin', # special handling
+  ('Function',): {
+    'impulses': 'builtin', # define a function # implemented with an impulse multiplexer/demultiplexer
   },
 }
 
