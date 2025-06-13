@@ -41,7 +41,7 @@ nodes = {
     'out': 'Slot',
   },
   ('For',): {
-    'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration']], # LoopEnd connects to the next statement
+    'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration', 'LoopEnd']], # LoopEnd connects to the next statement
     'in': [['int', 'Count'], ['bool', 'Reverse ']],
     'out': [['int', 'iteration']],
   },
@@ -158,7 +158,7 @@ nodes = {
   },
   ('Write', 'Dynamic', 'Variable'): {
     'tag': 'type',
-    'impulses': ['OnSuccess', ['OnNotFound', 'OnFailed']], # i'm assuming you would want to continue from OnSuccess usually
+    'impulses': ['OnSuccess', ['OnSuccess', 'OnNotFound', 'OnFailed']], # i'm assuming you would want to continue from OnSuccess usually
     'in': [['Slot', 'Target'], ['string', 'Path'], ['$', 'Value']],
     'out': [],
   },
@@ -174,7 +174,7 @@ nodes = {
     'impulses': 'builtin',
   },
   ('Join',): {
-    'impulses': 'builtin', # join two impulses into one - like impulse multiplexer with no index
+    'impulses': 'builtin', # join two impulses into one - like impulse demultiplexer with no index
   },
   ('Return',): {
     'impulses': 'builtin', # return a value from a block # does not have an impulse output?
@@ -183,6 +183,42 @@ nodes = {
     'impulses': 'builtin', # define a function # implemented with an impulse multiplexer/demultiplexer
   },
 }
+
+def fixnodeimpulses(node):
+  if 'impulses' not in node:
+    return
+  impulses = node['impulses']
+  if impulses == 'builtin':
+    node['builtin'] = True
+    node['linear'] = False
+    return
+  if impulses == True:
+    node['impulsein'] = True
+    node['impulseout'] = [['Next', True]]
+    node['linear'] = True
+    return
+  if impulses[0] == None:
+    node['impulsein'] = False
+    node['impulseout'] = [[iname, False] for iname in impulses[1]]
+    node['linear'] = False
+    return
+  if impulses[0] == False:
+    node['impulsein'] = True
+    node['impulseout'] = [[iname, False] for iname in impulses[1]]
+    node['linear'] = False
+    return
+  if impulses[0] == True:
+    node['impulsein'] = True
+    node['impulseout'] = [[iname, True] for iname in impulses[1]]
+    node['linear'] = False
+    return
+  node['impulsein'] = True
+  node['impulseout'] = [[iname, iname == impulses[0]] for iname in impulses[1]]
+  node['linear'] = False
+  return
+
+for node in nodes.values():
+  fixnodeimpulses(node)
 
 def getnode(name):
   # will add node aliases eventually

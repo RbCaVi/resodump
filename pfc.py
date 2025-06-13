@@ -16,6 +16,9 @@ def findvars(code):
   vars_ = {}
   vids = itertools.count()
   def f(stmt, path):
+    if stmt[2] in [['name', ['If']], ['name', ['Impulse', 'Multiplexer']]]:
+      # if and impulse multiplexer can return values :)
+      path = path[:-1] + (path[-1] + 0.5,)
     vars_[path] = [(vn, ['var', next(vids), vn[0]]) for vn in stmt[1]]
   walk(code, f)
   return vars_
@@ -64,6 +67,6 @@ def resolvevars(code, vars_):
   # should be all statements before except in adjacent subblocks
   # this disallows cyclic impulse and data chains
   def f(stmt, path):
-    stmt[1] = [vi for vn,vi in vars_[path]]
+    stmt[1] = [vi for vn,vi in (vars_[path] if path in vars_ else vars_[path[:-1] + (path[-1] + 0.5,)])]
     stmt[4] = [resolvevar(v, vars_, path) for v in stmt[4]]
   walk(code, f)
