@@ -74,8 +74,8 @@ def stripdatanodes(code):
   walk2(code, f)
   return datanodes
 
-def explicitimpulses1(code, varlist):
-  # make linear nodes have explicit impulses
+def addlinearimpulses(code, varlist):
+  # make linear nodes (one impulse in, one impulse out) have explicit impulses
   vids = itertools.count()
   def f(block, path):
     for substmt1,substmt2 in zip(block, block[1:]):
@@ -151,7 +151,7 @@ def explicitvaluejoin(code):
     block[:] = newblock
   walk2(code, f)
 
-def explicitimpulses2(code, varlist):
+def flattenbranches(code, varlist):
   # make branched nodes have explicit impulses
   # the ones with multiple impulses out, or with subblocks
   vids = itertools.count()
@@ -219,8 +219,8 @@ for fdef in functions.values():
   pfc.resolvevars(code, vars_)
   datanodes = stripdatanodes(code)
   varlist = [v for vs in vars_.values() for n,v in vs]
-  code = explicitimpulses2(code, varlist)
-  explicitimpulses1(code, varlist)
+  code = flattenbranches(code, varlist)
+  addlinearimpulses(code, varlist)
   #explicitvaluejoin(code)
   fdef.pop(0) # remove the arguments (they're in the variable list now)
   fdef[0] = code + datanodes
