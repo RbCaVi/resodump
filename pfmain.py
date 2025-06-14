@@ -350,10 +350,10 @@ for name,fcalls in calls.items():
   retvs = [*zip(*retvs, strict = True)]
   var = ['var', ('if', next(vids)), 'name']
   varlist.append(var)
-  finalcode.append([['Impulse', 'Demultiplexer'], None, [*argis], [], [argi], [var]])
-  finalcode.append([['Impulse', 'Multiplexer'], None, [reti], [var], [*retis], []])
+  finalcode.append([['name', ['Impulse', 'Demultiplexer']], None, [*argis], [], [argi], [var]])
+  finalcode.append([['name', ['Impulse', 'Multiplexer']], None, [reti], [var], [*retis], []])
   for arg,argv in zip(args, argvs):
-    finalcode.append([['Multiplex'], None, [], [var, *argv], [], [arg]])
+    finalcode.append([['name', ['Multiplex']], None, [], [var, *argv], [], [arg]])
   for ret,retv in zip(rets, retvs):
     for rv in retv:
       renamevar(finalcode, rv, ret)
@@ -398,18 +398,106 @@ ivaruses = {tuple(ivar):[] for ivar in ivars} # actually the places that generat
 vvaruses = {tuple(vvar):[] for vvar in vvars}
 
 for i,stmt in enumerate(finalcode):
-  print(stmt)
-  for ivar in stmt[4]:
+  for i2,ivar in enumerate(stmt[4]):
     if tuple(ivar) in ivaruses: # if the impulse is ever used
-      ivaruses[tuple(ivar)].append(i)
+      ivaruses[tuple(ivar)].append([i, i2])
   for vvar in stmt[3]:
     if vvar in vvars: # if it's actually a variable
-      vvaruses[tuple(vvar)].append(i)
+      vvaruses[tuple(vvar)].append([i, i2])
 
-pprint.pprint(finalcode)
-pprint.pprint(ivars)
-pprint.pprint(vvars)
-pprint.pprint(ivarlocs)
-pprint.pprint(vvarlocs)
-pprint.pprint(ivaruses)
-pprint.pprint(vvaruses)
+#pprint.pprint(finalcode)
+#pprint.pprint(ivars)
+#pprint.pprint(vvars)
+#pprint.pprint(ivarlocs)
+#pprint.pprint(vvarlocs)
+#pprint.pprint(ivaruses)
+#pprint.pprint(vvaruses)
+
+if False: # print a graph representation for graphonline.top
+  for i,stmt in enumerate(finalcode):
+    name,tag,argsi,argsv,retsi,retsv = stmt
+    n = f'{i} {name} {tag}'
+    for ai in argsi:
+      print(f'{ai}>{n}')
+    for av in argsv:
+      print(f'{av}>{n}')
+    for ri in retsi:
+      print(f'{n}>{ri}')
+    for rv in retsv:
+      print(f'{n}>{rv}')
+
+if False: # toposort nodes and print out code (but joined impulses aren't handled...)
+  deps = {i:set() for i in range(len(finalcode))}
+
+  for ivar in ivars:
+    for x in ivaruses[tuple(ivar)]:
+      deps[ivarlocs[tuple(ivar)]].add(x)
+
+  for vvar in vvars:
+    for x in vvaruses[tuple(vvar)]:
+      deps[x].add(vvarlocs[tuple(vvar)])
+
+  nodes = {*deps.keys()}
+  sortednodes = []
+
+  for i in range(len(nodes)):
+    for name in nodes:
+      if all(dep not in nodes for dep in deps[name]):
+        sortednodes.append(name)
+        nodes.remove(name)
+        break
+    else:
+      assert False, 'recursive or undefined function detected, aborting'
+
+  ivids = itertools.count()
+  vvids = itertools.count()
+  for var in varlist:
+    if var[2] == 'iname':
+      var[1] = next(ivids)
+    else:
+      var[1] = next(vvids)
+
+  sortednodes = [finalcode[i] for i in sortednodes]
+
+  def render(t):
+    if t[0] == 'name':
+      return ' '.join(t[1])
+    if t[0] == 'var':
+      if t[2] == 'iname':
+        return f'@i{t[1]}'
+      if t[2] == 'name':
+        return f'v{t[1]}'
+    if t[0] == 'literal':
+      if t[1] == 'string':
+        return f'"{t[2]}"'
+      if t[1] == 'int':
+        return f'{t[2]}'
+      if t[1] == 'rname':
+        return '[[' + ' '.join(t[2]) + ']]'
+      if t[1] == 'BodyNode':
+        return f'{t[2]}'
+      if t[1] == 'bool':
+        return 'true' if t[2] else 'false'
+      if t[1] == 'array':
+        return '[' + ', '.join(render(['literal', *x]) for x in t[2]) + ']'
+      if t[1] == 'null':
+        return 'null'
+      if t[1] == 'float':
+        return f'{t[2]}'
+    assert False, t
+
+  for node in sortednodes:
+    name,tag,argsi,argsv,retsi,retsv = node
+    name = render(name)
+    if tag is not None:
+      name += ' <' + render(tag) + '>'
+    args = [render(arg) for arg in argsi] + [render(arg) for arg in argsv]
+    rets = [render(ret) for ret in retsi] + [render(ret) for ret in retsv]
+    if len(rets) > 0:
+      name = ','.join(rets) + ' = ' + name
+    name += ' (' + ', '.join(args) + ')'
+    print(name)
+
+for 
+
+
