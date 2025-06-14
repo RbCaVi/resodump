@@ -178,6 +178,8 @@ nodes = {
   },
   ('Return',): {
     'impulses': 'builtin', # return a value from a block # does not have an impulse output?
+    'impulsein': True,
+    'impulseout': [],
   },
   ('Function',): {
     'impulses': 'builtin', # define a function # implemented with an impulse multiplexer/demultiplexer

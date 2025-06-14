@@ -50,5 +50,5 @@ Function () GetInventory: { // the arguments go before the function // i know it
     }
   invtop,_inputcount = Conditional (exists, dupinv, inventory)
   inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
-  Return (inv)
+  Return (inv, invtop)
 }
