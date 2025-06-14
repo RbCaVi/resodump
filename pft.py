@@ -128,7 +128,7 @@ def pass1(tokens):
       assert token[0] in ['name', 'int', 'float', 'string'], f'error: < before non name: {token}'
       close,tokens = gettoken(tokens)
       assert close[0] == '>', f'error: no matching >: {close}'
-      token = ['tag', token[0], token[1]]
+      token = ['tag', token]
     elif token[0] == '>':
       assert False, 'error: unmatched >'
     elif token[0] == '=':
