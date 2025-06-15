@@ -81,14 +81,15 @@ nodes = {
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMin',
   },
   ('Max',): {
-    'tag': 'type',
     'forms': [ # max has multiple forms # so do mul and min, but i was lazy to do them
       {
+        'tag': 'type',
         'in': [['$', 'A'], ['$', 'B']],
         'out': '$',
         'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMax',
       },
       {
+        'tag': 'type',
         'in': [['*$', 'Operands']], # * means list of inputs
         'out': '$',
         'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMaxMulti',
@@ -96,10 +97,18 @@ nodes = {
     ],
   },
   ('Mul',): {
-    'tag': 'type',
-    'in': [['$', 'A'], ['$', 'B']],
-    'out': '$',
-    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMul',
+    'forms': [
+      {
+        'tag': 'type',
+        'in': [['$', 'A'], ['$', 'B']],
+        'out': '$',
+        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMul',
+      },
+      {
+        'in': [['float', 'A'], ['float3', 'B']],
+        'out': 'float3',
+      },
+    ],
   },
   ('NOT',): {
     'in': [['bool', 'A']],
@@ -169,9 +178,13 @@ nodes = {
   # because they have varying numbers of impulse inputs/outputs
   ('Impulse', 'Multiplexer'): {
     'impulses': 'builtin',
+    'in': [['int', 'Index']],
+    'out': [],
   },
   ('Impulse', 'Demultiplexer'): {
     'impulses': 'builtin',
+    'in': [],
+    'out': [['int', 'Index']],
   },
   ('Join',): {
     'impulses': 'builtin', # join two impulses into one - like impulse demultiplexer with no index

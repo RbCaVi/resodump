@@ -1,4 +1,5 @@
 import itertools
+import functools
 
 import pft
 import pfc
@@ -430,11 +431,11 @@ if False: # toposort nodes and print out code (but joined impulses aren't handle
   deps = {i:set() for i in range(len(finalcode))}
 
   for ivar in ivars:
-    for x in ivaruses[tuple(ivar)]:
+    for x,_ in ivaruses[tuple(ivar)]:
       deps[ivarlocs[tuple(ivar)]].add(x)
 
   for vvar in vvars:
-    for x in vvaruses[tuple(vvar)]:
+    for x,_ in vvaruses[tuple(vvar)]:
       deps[x].add(vvarlocs[tuple(vvar)])
 
   nodes = {*deps.keys()}
@@ -498,6 +499,113 @@ if False: # toposort nodes and print out code (but joined impulses aren't handle
     name += ' (' + ', '.join(args) + ')'
     print(name)
 
-for 
+# type inference
 
+# can this type `t` cast to the union type `ts` represented as a set of type string identifiers?
+def typeincluded(t, ts):
+  if t in ts:
+    return True
+  if t == 'int' and 'float' in ts:
+    return True
+  if t == 'int2' and 'float2' in ts:
+    return True
+  if t == 'int3' and 'float3' in ts:
+    return True
+  if t == 'Grabber' and 'Component' in ts:
+    return True
+  if t == 'null' and 'string' in ts:
+    return True
+  return False
 
+def intersecttypes2(t1, t2):
+  if t1 == '$':
+    return t2
+  if t2 == '$':
+    return t1
+  ts = set()
+  for t in t1:
+    if typeincluded(t, t2):
+      ts.add(t)
+  for t in t2:
+    if typeincluded(t, t1):
+      ts.add(t)
+  return ts
+
+def intersecttypes(*ts):
+  #print('ts pmo', ts, functools.reduce(intersecttypes2, ts))
+  return functools.reduce(intersecttypes2, ts)
+
+def uniontypes2(t1, t2):
+  if t1 == '$':
+    return '$'
+  if t2 == '$':
+    return '$'
+  return t1 | t2
+
+def uniontypes(*ts):
+  return functools.reduce(uniontypes2, ts)
+
+def gettypes(nodedata, intypes, outtypes):
+  if 'forms' in nodedata:
+    # uh...
+    # in and out
+    intypes2,outtypes2 = zip(*[gettypes(form, intypes, outtypes) for form in nodedata['forms']])
+    print(nodedata)
+    print(intypes, outtypes, intypes2, outtypes2)
+    intypes = [intersecttypes2(it, t) for it,t in zip(intypes, map(uniontypes, *intypes2))]
+    outtypes = [intersecttypes2(it, t) for it,t in zip(outtypes, map(uniontypes, *outtypes2))]
+    print('yee', intypes, outtypes)
+    return intypes, outtypes
+  nodein = nodedata['in']
+  nodeout = nodedata['out']
+  if type(nodeout) == str:
+    nodeout = [[nodeout, '*']]
+  if len(nodein) == 1 and nodein[0][0][0] == '*':
+    nodein = [['$', None] for t in intypes]
+  if len(intypes) != len(nodein):
+    return [set(['nope']) for _ in intypes], [set(['nope']) for _ in outtypes]
+  if len(outtypes) != len(nodeout):
+    return [set(['nope']) for _ in intypes], [set(['nope']) for _ in outtypes]
+  # find $ as intersection of input and output $ types
+  # you might be able to narrow the type of a non directly connected node
+  # because inputs also change the type of the variables connected to them
+  # so i can propagate the type backward to nodes with only generic outputs
+  # like Read Dynamic Variable
+  if '$' in [t for t,n in nodein] + [t for t,n in nodeout]:
+    gtype = intersecttypes(*[it for it,(t,n) in zip(intypes, nodein) if t == '$'], *[ot for ot,(t,n) in zip(outtypes, nodeout) if t == '$'])
+    #print(gtype, [it for it,(t,n) in zip(intypes, nodein) if t == '$'], [ot for ot,(t,n) in zip(outtypes, nodeout) if t == '$'])
+  #print([[it, t, intersecttypes2(it, t)] for it,(t,n) in zip(intypes, nodein)], [[ot, t, intersecttypes2(ot, t)] for ot,(t,n) in zip(outtypes, nodeout)])
+  if any(intersecttypes2(it, t) == set() for it,(t,n) in zip(intypes, nodein)) or any(intersecttypes2(ot, t) == set() for ot,(t,n) in zip(outtypes, nodeout)):
+    return [set(['nope']) for _ in intypes], [set(['nope']) for _ in outtypes]
+  return [gtype if t == '$' else {t} for t,n in nodein], [gtype if t == '$' else {t} for t,n in nodeout]
+
+types = {tuple(var):'$' for var in vvars}
+
+def typeof(v):
+  if v[0] == 'literal':
+    if v[1] == 'rname':
+      return '$' # nope not going to do this
+    if v[1] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode']:
+      return {v[1]}
+    if v[1] == 'array':
+      assert all(e[0] in ['int', 'float'] for e in v[2]), f'array with disallowed types: {v}'
+      typ = 'int'
+      if any(e[0] == 'float' for e in v[2]):
+        typ = 'float'
+      assert len(v[2]) in [1, 2, 3, 4], f'array with disallowed length: {v}'
+      return {typ + str(len(v[2]))}
+  return types[tuple(v)]
+
+for node in finalcode:
+  #print('n', node)
+  intypes,outtypes = gettypes(pfnodes.getnode(node[0][1]), [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
+  #print('t', intypes,outtypes)
+  if set(['nope']) in intypes + outtypes:
+    print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
+  for it,iv in zip(intypes, node[3]):
+    if iv[0] == 'var':
+      #print('set', types[tuple(iv)], it, iv)
+      types[tuple(iv)] = intersecttypes(types[tuple(iv)], it)
+  for ot,ov in zip(outtypes, node[5]):
+    #print('set', types[tuple(ov)], ot, ov)
+    types[tuple(ov)] = intersecttypes(types[tuple(ov)], ot)
