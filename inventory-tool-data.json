@@ -81,7 +81,7 @@
       {"Name": "Templates",
         "Active": false,
         "Children": [
-          {"Name": "Inventory",
+          {"Name": "Inventory", "id": "inventory",
             "Tag": "RbCaViInventory",
             "Components": [
               {"type": "[FrooxEngine]FrooxEngine.Grabbable",
@@ -138,7 +138,7 @@
               }
             ],
             "Children": [
-              {"Name": "Items", "id": "inventoryitems",
+              {"Name": "Items",
                 "Tag": "RbCaViInventoryItems"
               },
               {"Name": "Code",

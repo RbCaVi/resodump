@@ -5,13 +5,13 @@ RawDataTool Events <tool> ()
     opened2 = NOT (opened)
     Write Dynamic Variable (invtop, "RbCaViInventory/Opened", opened2)
       OnSuccess: {
-        Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+        _triggered = Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
       }
   }
   SecondaryPressed: {
     inventory,invtop = [GetInventory] ()
-    islot = Duplicate Slot ([[Inventory Slot Template]], inventory)
-    side = Tool Equipping Side ([[Tool]])
+    islot = Duplicate Slot ([[inventoryslot]], inventory)
+    side = Tool Equipping Side ([[tool]])
     hand = Get Side (LeftHand, side)
     user = Get Active User Self ()
     grabber = Get User Grabber (user, hand)
@@ -22,7 +22,7 @@ RawDataTool Events <tool> ()
       LoopIteration: {
         item = Get Child (itemholder, i)
         Set Parent (item, islot, true)
-        Set Local Position (item, [0,0,0])
+        Set Local Position (item, [0, 0, 0])
         bbox = Compute Bounding Box (item, false, islot, null)
         _min,_max,center,size,_valid,_empty = Bounding Box Properties (bbox)
         sizex,sizey,sizez = Unpack xyz (size)
@@ -36,7 +36,7 @@ RawDataTool Events <tool> ()
         Set Local Position (item, ipos3)
         Set Local Scale (item, iscale2)
       }
-    Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
+    _triggered = Dynamic Impulse Trigger ("UpdateInventory", invtop, true)
   }
 
 Function () GetInventory: { // the arguments go before the function // i know it's weird, but it lets me not write an extra syntax rule
@@ -46,9 +46,9 @@ Function () GetInventory: { // the arguments go before the function // i know it
   exists = Not Null (inventory)
   If (exists)
     OnFalse: {
-      dupinv = Duplicate Slot ([[Inventory Template]], userroot)
+      _dup = Duplicate Slot ([[inventory]], userroot)
     }
-  invtop,_inputcount = Conditional (exists, dupinv, inventory)
-  inv = Find Child By Tag (invtop, "RbCaViInventoryItems", 0)
-  Return (inv, invtop)
+  // i can just use inventory here because of the lazy evaluation
+  inv = Find Child By Tag (inventory, "RbCaViInventoryItems", 0)
+  Return (inv, inventory)
 }
