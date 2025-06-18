@@ -545,6 +545,7 @@ def uniontypes2(t1, t2):
 def uniontypes(*ts):
   return functools.reduce(uniontypes2, ts)
 
+# this doesn't take into account the tag yet.....
 def gettypes(nodedata, intypes, outtypes):
   if 'forms' in nodedata:
     # uh...
@@ -560,8 +561,10 @@ def gettypes(nodedata, intypes, outtypes):
   nodeout = nodedata['out']
   if type(nodeout) == str:
     nodeout = [[nodeout, '*']]
-  if len(nodein) == 1 and nodein[0][0][0] == '*':
+  if len(nodein) == 1 and nodein[0][0] == '*$':
     nodein = [['$', None] for t in intypes]
+  #if len(nodein) == 2 and nodein[1][0] == '*$': # special case for multiplex
+  #  nodein = [modein[0]] + [['$', None] for t in intypes]
   if len(intypes) != len(nodein):
     return [set(['nope']) for _ in intypes], [set(['nope']) for _ in outtypes]
   if len(outtypes) != len(nodeout):
@@ -609,3 +612,20 @@ for node in finalcode:
   for ot,ov in zip(outtypes, node[5]):
     #print('set', types[tuple(ov)], ot, ov)
     types[tuple(ov)] = intersecttypes(types[tuple(ov)], ot)
+
+# now for generation (?)
+# casts might be an issue...
+# eh
+
+def generatenode(node):
+  nodename = pfnodes.getnode(node[0][1])
+  intypes = [typeof(v) for v in node[3]]
+  outtypes = [typeof(v) for v in node[5]]
+  nodeclass = choosenode(nodename, intypes, outtypes)
+  nodecomponent = {}
+
+# the final node data
+nodes = []
+
+for node in finalcode:
+  generatenode(node)
