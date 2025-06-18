@@ -18,8 +18,8 @@ def findvars(code):
       # if and impulse multiplexer can return values :)
       #path = path[:-1] + (path[-1] + 0.5,) # nope
       pass
-    ivars[path] = [(vn, ['var', next(vids)]) for vn in stmt[2]]
-    vvars[path] = [(vn, ['var', next(vids)]) for vn in stmt[3]]
+    ivars[path] = [(vn, ['var', next(vids)]) for vn in stmt[4]]
+    vvars[path] = [(vn, ['var', next(vids)]) for vn in stmt[5]]
   walk(code, f)
   return ivars, vvars
 

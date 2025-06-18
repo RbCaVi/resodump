@@ -432,9 +432,6 @@ if False: # toposort nodes and print out code (but joined impulses aren't handle
 
 # type inference
 
-# need to fix
-# somehow the if got an input and output of the same variable ????
-
 # can this type `t` cast to the union type `ts` represented as a set of type string identifiers?
 def typeincluded(t, ts):
   if t in ts:
