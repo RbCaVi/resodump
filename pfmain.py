@@ -100,59 +100,6 @@ def addlinearimpulses(code, varlist):
           substmt2[4].insert(0, var)
   walk2(code, f)
 
-def explicitvaluejoin(code):
-  # handle return in if and impulse multiplexer
-  # not doing this rn tbh
-  return
-  vids = itertools.count()
-  def f(block, path):
-    newblock = []
-    for substmt in block:
-      newblock.append(substmt)
-      if substmt[2] not in [['name', ['If']], ['name', ['Impulse', 'Multiplexer']]]:
-        continue
-      impulseout = [ret for ret in substmt[1] if ret[2] == 'iname'] # impulse outputs
-      valout = [ret for ret in substmt[1] if ret[2] == 'name']
-      if len(impulseout) != 0:
-        assert len(substmt[5]) == 0, f'statement with explicit impulses may not have subblocks: {substmt}'
-        assert len(valout) == 0, f'if/impulse multiplexer statement with explicit impulses may not return a value: {substmt}'
-        continue
-      # empty return will cause an error
-      # also no early return :/
-      if len(valout) == 0:
-        continue
-      assert False, 'return from if or impulse multiplexer not supported :('
-      # force all branches to exist
-      if substmt[2] == ['name', ['If']]:
-        assert sorted([subblock[0] for subblock in substmt[5]]) == [['name', ['OnFalse']], ['name', ['OnTrue']]], 'if statement returning values must contain both branches'
-        falsebranch = [subblock[1] for subblock in substmt[5] if subblock[0] == ['name', ['OnFalse']]][0]
-        truebranch = [subblock[1] for subblock in substmt[5] if subblock[0] == ['name', ['OnTrue']]][0]
-        falsereturn = falsebranch.pop()
-        truereturn = truebranch.pop()
-        assert falsereturn[2] == ['name', ['Return']], f'if statement returning values missing Return on false branch: {falsebranch}'
-        assert truereturn[2] == ['name', ['Return']], f'if statement returning values missing Return on true branch: {truebranch}'
-        assert falsereturn[1] == [], f'Return does not return a value (confusing, i know): {falsereturn}'
-        assert truereturn[1] == [], f'Return does not return a value (confusing, i know): {truereturn}'
-        assert falsereturn[3] == None, f'Return does not have a tag: {falsereturn}'
-        trueretvals = truereturn[4]
-        falseretvals = falsereturn[4]
-        assert truereturn[3] == None, f'Return does not have a tag: {truereturn}'
-        assert falsereturn[5] == [], f'Return does not have subblocks: {falsereturn}'
-        assert truereturn[5] == [], f'Return does not have subblocks: {truereturn}'
-        assert len(falseretvals) == len(valout), f'Return must have as many arguments as values returned from If: {falsereturn}'
-        assert len(trueretvals) == len(valout), f'Return must have as many arguments as values returned from If: {truereturn}'
-        for v,tv,fv in zip(valout, truereturn, falsereturn):
-          # i'm assuming the value of the condition doesn't change during the execution :/
-          newblock.append(['stmt', [v], ['name', ['Conditional']], None, [tv, fv, substmt[4][0]], []])
-      else:
-        assert sorted([subblock[0] for subblock in substmt[5]]) == [['literal', 'int', i] for i in range(len(substmt[5]))], 'impulse multiplexer statement returning values must contain all branches'
-        branches = [[subblock[1] for subblock in substmt[5] if subblock[0] == ['literal', 'int', i]][0] for i in range(len(substmt[5]))]
-        for i,branch in enumerate(branches):
-          assert branch[-1][2] == ['name', ['Return']], f'impulse multiplexer statement returning values missing Return on branch {i}: {branch}'
-        assert False, 'Impulse Multiplexer return not supported yet :('
-    block[:] = newblock
-  walk2(code, f)
-
 def flattenbranches(code, varlist):
   # make branched nodes have explicit impulses
   # the ones with multiple impulses out, or with subblocks
