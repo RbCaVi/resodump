@@ -33,27 +33,28 @@ def walk2(code, f):
   # apply the function to code blocks instead of statements
   f(code, ())
   def f2(stmt, path):
-    for i,subblock in enumerate(stmt[5]):
-      f(subblock[2], path + (i,))
+    for i,subblock in enumerate(stmt[6]):
+      f(subblock[1], path + (i,))
   pfc.walk(code, f2)
 
 def stripfunctions(code):
   # strip out function definitions
-  # won't catch nested function definitions :(
+  # won't catch nested function definitions :/
   functions = []
   def f(block, path):
     newsubstmts = []
     for substmt in block:
-      if substmt[2] == ['name', ['Function']]:
-        assert substmt[1] == [], 'Function does not return values'
-        assert substmt[3] == None, 'Function does not have a tag'
-        funcargs = substmt[4]
-        assert all(arg[0] == 'name' for arg in funcargs), f'non name(s) found in argument list: {[arg for arg in funcargs if arg[0] == "name"]}'
-        assert len(substmt[5]) == 1, 'Function should have one subblock'
-        assert substmt[5][0][0] == 'subblock'
-        assert substmt[5][0][1][0] == 'name'
-        funcname = tuple(substmt[5][0][1][1])
-        funccode = substmt[5][0][2]
+      if substmt[0] == ['name', ['Function']]:
+        assert substmt[4] == [], 'Function does not return impulses'
+        assert substmt[5] == [], 'Function does not return values'
+        assert substmt[1] == None, 'Function does not have a tag'
+        assert substmt[2] == [], 'Function does not take impulses'
+        funcargs = substmt[3]
+        assert len(substmt[6]) == 1, 'Function should have one subblock'
+        subblock = substmt[6][0]
+        assert subblock[0][0] == 'name'
+        funcname = tuple(subblock[0][1])
+        funccode = subblock[1]
         functions.append((funcname, funcargs, funccode))
       else:
         newsubstmts.append(substmt)
@@ -69,7 +70,7 @@ def stripdatanodes(code):
   def f(block, path):
     newsubstmts = []
     for substmt in block:
-      if substmt[2][0] == 'fname' or 'impulsein' in pfnodes.getnode(substmt[2][1]) or substmt[2][1] == ['Return'] or substmt[2][1] == ['Impulse', 'Demultiplexer'] or substmt[2][1] == ['Join']:
+      if substmt[0][0] == 'fname' or 'impulsein' in pfnodes.getnode(substmt[0][1]) or substmt[0][1] == ['Return'] or substmt[0][1] == ['Impulse', 'Demultiplexer'] or substmt[0][1] == ['Join']:
         newsubstmts.append(substmt)
       else:
         datanodes.append(substmt)
@@ -77,92 +78,68 @@ def stripdatanodes(code):
   walk2(code, f)
   return datanodes
 
-def addlinearimpulses(code, varlist):
+def addlinearimpulses(code, ivarlist):
   # make linear nodes (one impulse in, one impulse out) have explicit impulses
   def f(block, path):
     for substmt1,substmt2 in zip(block, block[1:]):
-      if substmt1[2][0] == 'name' and substmt1[2][1] != ['Impulse', 'Demultiplexer'] and substmt1[2][1] != ['Join'] and not pfnodes.getnode(substmt1[2][1])['linear']:
+      if substmt1[0][0] == 'name' and substmt1[0][1] != ['Impulse', 'Demultiplexer'] and substmt1[0][1] != ['Join'] and not pfnodes.getnode(substmt1[0][1])['linear']:
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
         continue
-      assert len(substmt1[5]) == 0, 'linear statement may not have subblocks'
-      impulseout = [ret for ret in substmt1[1] if ret[2] == 'iname'] # impulse outputs from the first node
-      impulsein = [arg for arg in substmt2[4] if arg[0] == 'var' and arg[2] == 'iname'] # impulse inputs into the second node
+      assert len(substmt1[6]) == 0, 'linear statement may not have subblocks'
+      impulseout = substmt1[4] # impulse outputs from the first node
+      impulsein = substmt2[2] # impulse inputs into the second node
       assert (len(impulseout) == 0) == (len(impulsein) == 0), f'two adjacent statements must both have either implicit or explicit impulses: {substmt1}, {substmt2}'
       if len(impulseout) == 0:
         # both implicit
         # add a new variable to the variable list
-        var = ['var', ('il', next(vids)), 'iname']
-        varlist.append(var)
-        substmt1[1].insert(0, var)
-        if substmt2[2][0] != 'name' or pfnodes.getnode(substmt2[2][1])['impulsein']:
-          # the second statement takes impulse inputs
-          substmt2[4].insert(0, var)
+        var = ['var', ('il', next(vids))]
+        ivarlist.append(var)
+        substmt1[4].insert(0, var)
+        if substmt2[0][0] != 'name' or pfnodes.getnode(substmt2[0][1])['impulsein']:
+          # the second statement takes an impulse input
+          substmt2[2].insert(0, var)
   walk2(code, f)
 
-def flattenbranches(code, varlist):
+def flattenbranches(code, ivarlist):
   # make branched nodes have explicit impulses
   # the ones with multiple impulses out, or with subblocks
   def f(code):
     newcode = []
     for substmt in code:
       newcode.append(substmt)
-      if substmt[2][0] == 'name' and substmt[2][1] != ['Impulse', 'Demultiplexer'] and substmt[2][1] != ['Join'] and not pfnodes.getnode(substmt[2][1])['linear']:
+      if substmt[0][0] == 'name' and substmt[0][1] != ['Impulse', 'Demultiplexer'] and substmt[0][1] != ['Join'] and not pfnodes.getnode(substmt[0][1])['linear']:
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
-        impulseout = [ret for ret in substmt[1] if ret[2] == 'iname'] # impulse outputs
-        if len(impulseout) != 0:
+        if len(substmt[4]) != 0:
           # has explicit impulses, not handled here
+          assert len(substmt[6]) == 0, 'statement with explicit impulse outputs may not also have subblocks'
           continue
-        blocks = substmt[5]
-        blocks = [[name, f(block)] for _,name,block in blocks]
+        blocks = substmt[6]
+        blocks = [[name, f(block)] for name,block in blocks]
         invars = [] # going into the blocks
         outvars = [] # going out of the blocks
-        for name,connectout in pfnodes.getnode(substmt[2][1])['impulseout']:
+        for name,connectout in pfnodes.getnode(substmt[0][1])['impulseout']:
           if ['name', [name]] in [name for name,block in blocks]:
             block = [block for bname,block in blocks if bname == ['name', [name]]][0]
           else:
             block = []
-          var = ['var', ('ib', next(vids)), 'iname']
-          varlist.append(var)
-          block.insert(0, ['stmt', [], ['name', ['Continue']], None, [var], []])
+          var = ['var', ('ib', next(vids))]
+          ivarlist.append(var)
+          block.insert(0, [['name', ['Continue']], None, [var], [], [], [], []])
           invars.append(var)
-          var = ['var', ('ic', next(vids)), 'iname']
-          varlist.append(var)
-          block.append(['stmt', [var], ['name', ['Continue']], None, [], []])
+          var = ['var', ('ic', next(vids))]
+          ivarlist.append(var)
+          block.append([['name', ['Continue']], None, [], [], [var], [], []])
           if connectout:
             outvars.append(var)
           newcode += block
-        substmt[5] = []
-        substmt[1] = invars + substmt[1]
+        substmt[6] = []
+        substmt[4] = invars
         if len(outvars) > 0:
-          newcode.append(['stmt', [], ['name', ['Join']], None, outvars, []])
+          newcode.append([['name', ['Join']], None, outvars, [], [], [], []])
     return newcode
   return f(code)
-
-def filter2(f, l):
-  # split a list into 2 lists
-  # the first one when the predicate is true
-  # and the second one when the predicate is false
-  l1 = []
-  l2 = []
-  for x in l:
-    if f(x):
-      l1.append(x)
-    else:
-      l2.append(x)
-  return l1, l2
-
-def reformatstmt(stmt):
-  # reformat the statement
-  # the order of the parts is the same as in source code
-  # reordered to name tag args returns
-  # with args and returns split into impulses and not impulses
-  _,rets,name,tag,args,subblocks = stmt
-  assert len(subblocks) == 0, f'there\'s not supposed to be a subblock here: {stmt}'
-  argsi,argsv = filter2(lambda arg: arg[0] == 'var' and arg[2] == 'iname', args)
-  retsi,retsv = filter2(lambda ret: ret[2] == 'iname', rets) # returns are (i hope) always variables
-  return [name, tag, argsi, argsv, retsi, retsv]
 
 def renameimpulse(code, pat, repl):
   for stmt in code:
@@ -174,14 +151,14 @@ def renamevar(code, pat, repl):
     stmt[3] = [repl if v == pat else v for v in stmt[3]]
     stmt[5] = [repl if v == pat else v for v in stmt[5]]
 
-def removejoins(code, varlist):
+def removejoins(code):
   # also removes continues :)
   # i could just say continue is join one input
   # but that would mean i have to special case it for addlinearimpulses()
   for stmt in code:
     if stmt[0] not in [['name', ['Join']], ['name', ['Continue']]]:
       continue
-    name,tag,argsi,argsv,retsi,retsv = stmt
+    name,tag,argsi,argsv,retsi,retsv,subblocks = stmt
     assert tag is None, f'Join or Continue cannot have a tag: {stmt}'
     assert len(argsv) == 0, f'Join or Continue cannot have value arguments: {stmt}'
     assert len(retsv) == 0, f'Join or Continue cannot return values: {stmt}'
@@ -212,32 +189,28 @@ functions[()] = [[], code]
 
 for fdef in functions.values():
   args,code = fdef
-  vars_ = pfc.findvars(code)
+  ivars,vvars = pfc.findvars(code)
   argvars = [['var', i - len(args), 'name'] for i in range(len(args))]
-  vars_[(-1,)] = argvars
-  pfc.resolvevars(code, vars_)
+  vvars[(-1,)] = argvars
+  pfc.resolvevars(code, ivars, vvars)
   datanodes = stripdatanodes(code)
-  varlist = [v for vs in vars_.values() for n,v in vs]
-  #explicitvaluejoin(code)
-  code = flattenbranches(code, varlist)
-  if code[-1][2] == ['name', ['Return']]:
-    var = ['var', 'ie', 'iname'] # this will be stripped by removejoins(), but it'll leave an impulse input on the first statement for an entry point
-    varlist.append(var)
-    code.insert(0, ['stmt', [], ['name', ['Continue']], None, [var], []])
-    reti = len(code) - 1
-  else:
-    reti = None
-  addlinearimpulses(code, varlist)
-  code += datanodes # code is now a list of nodes with no nesting
-  code = [reformatstmt(s) for s in code]
-  if reti is not None: # don't do drugs, kids
-    ret = code[reti]
+  ivarlist = [v for vs in ivars.values() for n,v in vs]
+  vvarlist = [v for vs in vvars.values() for n,v in vs]
+  code = flattenbranches(code, ivarlist)
+  if code[-1][0] == ['name', ['Return']]:
+    var = ['var', 'ie'] # this will be stripped by removejoins(), but it'll leave an impulse input on the first statement for an entry point
+    ivarlist.append(var)
+    code.insert(0, [['name', ['Continue']], None, [var], [], [], [], []])
+    ret = code[-1]
   else:
     ret = None
-  code = removejoins(code, varlist)
+  addlinearimpulses(code, ivarlist)
+  code += datanodes # code is now a list of nodes with no nesting
+  code = removejoins(code)
   fdef.pop(0) # remove the arguments (they're in the variable list now)
   fdef[0] = code
-  fdef.append(varlist)
+  fdef.append(ivarlist)
+  fdef.append(vvarlist)
   fdef.append(argvars)
   fdef.append(ret)
 
@@ -247,7 +220,7 @@ for fdef in functions.values():
 
 funcdeps = {}
 
-for name,(code,varlist,args,ret) in functions.items():
+for name,(code,ivarlist,vvarlist,args,ret) in functions.items():
   funcdeps[name] = {tuple(n) for (t,n),*_ in code if t == 'fname'}
 
 # i could remove unused functions
@@ -266,14 +239,16 @@ for i in range(len(funcnames)):
     assert False, 'recursive or undefined function detected, aborting'
 
 calls = {name:[] for name in functions}
-for name,(code,varlist,args,ret) in functions.items():
+for name,(code,ivarlist,vvarlist,args,ret) in functions.items():
   # renumber the variables
   # to avoid collision
-  for var in varlist:
-    var[1] = next(vids)
+  for ivar in ivarlist:
+    ivar[1] = next(vids)
+  for vvar in vvarlist:
+    vvar[1] = next(vids)
   # collect all calls
   for stmt in code:
-    name,tag,argsi,argsv,retsi,retsv = stmt
+    name,tag,argsi,argsv,retsi,retsv,subblocks = stmt
     if name[0] == 'fname':
       assert tag is None, 'user defined functions can\'t have a tag'
       assert len(argsi) == 1, 'user defined functions must have linear control flow'
@@ -283,25 +258,26 @@ for name,(code,varlist,args,ret) in functions.items():
 assert calls[()] == [], 'main code should not be called (or callable for that matter)'
 del calls[()]
 
-finalcode = sum([[stmt for stmt in code if stmt[0][0] != 'fname'] for code,varlist,args,ret in functions.values()], [])
-varlist = sum([varlist for code,varlist,args,ret in functions.values()], [])
+finalcode = sum([[stmt for stmt in code if stmt[0][0] != 'fname'] for code,ivarlist,vvarlist,args,ret in functions.values()], [])
+ivarlist = sum([ivarlist for code,ivarlist,vvarlist,args,ret in functions.values()], [])
+vvarlist = sum([vvarlist for code,ivarlist,vvarlist,args,ret in functions.values()], [])
 
 for name,fcalls in calls.items():
-  ret = functions[name][3]
+  ret = functions[name][4]
   assert ret is not None, 'function must have return'
   argi = functions[name][0][0][2][0]
   reti = ret[2][0]
-  args = functions[name][2]
+  args = functions[name][3]
   rets = ret[3]
   argis,retis,argvs,retvs = zip(*fcalls, strict = True)
   argvs = [*zip(*argvs, strict = True)]
   retvs = [*zip(*retvs, strict = True)]
-  var = ['var', ('if', next(vids)), 'name']
-  varlist.append(var)
-  finalcode.append([['name', ['Impulse', 'Demultiplexer']], None, [*argis], [], [argi], [var]])
-  finalcode.append([['name', ['Impulse', 'Multiplexer']], None, [reti], [var], [*retis], []])
+  var = ['var', ('if', next(vids))]
+  vvarlist.append(var)
+  finalcode.append([['name', ['Impulse', 'Demultiplexer']], None, [*argis], [], [argi], [var], []])
+  finalcode.append([['name', ['Impulse', 'Multiplexer']], None, [reti], [var], [*retis], [], []])
   for arg,argv in zip(args, argvs):
-    finalcode.append([['name', ['Multiplex']], None, [], [var, *argv], [], [arg]])
+    finalcode.append([['name', ['Multiplex']], None, [], [var, *argv], [], [arg], []])
   for ret,retv in zip(rets, retvs):
     for rv in retv:
       renamevar(finalcode, rv, ret)
@@ -311,26 +287,34 @@ finalcode = [s for s in finalcode if s[0] not in [['name', ['Return']]]]
 ivars = []
 vvars = []
 
-for var in varlist:
+for ivar in ivarlist:
   argcount = 0
   retcount = 0
   for stmt in finalcode:
-    name,tag,argsi,argsv,retsi,retsv = stmt
-    if var in argsi + argsv:
+    name,tag,argsi,argsv,retsi,retsv,subblocks = stmt
+    if ivar in argsi:
       argcount += 1
-    if var in retsi + retsv:
+    if ivar in retsi:
       retcount += 1
-  if var[2] == 'name':
-    if retcount == 0:
-      assert argcount == 0, 'an undefined variable cannot be used'
-      continue
-    assert retcount == 1, 'a variable can only be defined once'
-    vvars.append(var)
-  else:
-    if argcount == 0:
-      continue
-    assert argcount == 1, 'an impulse (possibly joined) can only be used once'
-    ivars.append(var)
+  if argcount == 0:
+    continue
+  assert argcount == 1, 'an impulse can only be used once'
+  ivars.append(ivar)
+
+for vvar in vvarlist:
+  argcount = 0
+  retcount = 0
+  for stmt in finalcode:
+    name,tag,argsi,argsv,retsi,retsv,subblocks = stmt
+    if vvar in argsv:
+      argcount += 1
+    if vvar in retsv:
+      retcount += 1
+  if retcount == 0:
+    assert argcount == 0, 'an undefined variable cannot be used'
+    continue
+  assert retcount == 1, 'a variable can only be defined once'
+  vvars.append(vvar)
 
 ivarlocs = {}
 
@@ -447,6 +431,9 @@ if False: # toposort nodes and print out code (but joined impulses aren't handle
     print(name)
 
 # type inference
+
+# need to fix
+# somehow the if got an input and output of the same variable ????
 
 # can this type `t` cast to the union type `ts` represented as a set of type string identifiers?
 def typeincluded(t, ts):

@@ -223,13 +223,42 @@ def pass4(tokens):
     out.append(token)
   return out
 
+def filter2(f, l):
+  # split a list into 2 lists
+  # the first one when the predicate is true
+  # and the second one when the predicate is false
+  l1 = []
+  l2 = []
+  for x in l:
+    if f(x):
+      l1.append(x)
+    else:
+      l2.append(x)
+  return l1, l2
+
+def reformatstmt(stmt):
+  # reformat the statement
+  # the order of the parts is the same as in source code
+  # reordered to name tag args returns
+  # with args and returns split into impulses and not impulses
+  assert stmt[0] == 'stmt'
+  _,rets,name,tag,args,subblocks = stmt
+  argsi,argsv = filter2(lambda arg: arg[0] == 'iname', args)
+  retsi,retsv = filter2(lambda ret: ret[0] == 'iname', rets) # returns are (i hope) always variables
+  newsubblocks = []
+  for _,subname,subblock in subblocks:
+    newsubblocks.append([subname, [reformatstmt(s) for s in subblock]])
+  return [name, tag, argsi, argsv, retsi, retsv, newsubblocks]
+
 def parse(s):
   tokens = lex(s)
   tokens2 = pass1(tokens)
   tokens3 = pass2(tokens2)
   tokens4 = pass3(tokens3)
   tokens5 = pass4(tokens4)
+  
+  out = [reformatstmt(s) for s in tokens5]
 
-  return tokens5
+  return out
 
 #n = ''.join(n).lower()

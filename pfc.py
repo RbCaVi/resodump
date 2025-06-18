@@ -5,23 +5,23 @@ import itertools
 
 def walk(code, f, path = ()):
   for i1,s in enumerate(code):
-    if s[0] == 'stmt':
-      f(s, path + (i1,))
-      for i2,subblock in enumerate(s[5]):
-        walk(subblock[2], f, path + (i1, i2))
-    else:
-      assert False, f'non statement in code: {s}'
+    f(s, path + (i1,))
+    for i2,subblock in enumerate(s[6]):
+      walk(subblock[1], f, path + (i1, i2))
 
 def findvars(code):
-  vars_ = {}
+  ivars = {}
+  vvars = {}
   vids = itertools.count()
   def f(stmt, path):
-    if stmt[2] in [['name', ['If']], ['name', ['Impulse', 'Multiplexer']]]:
+    if stmt[0] in [['name', ['If']], ['name', ['Impulse', 'Multiplexer']]]:
       # if and impulse multiplexer can return values :)
-      path = path[:-1] + (path[-1] + 0.5,)
-    vars_[path] = [(vn, ['var', next(vids), vn[0]]) for vn in stmt[1]]
+      #path = path[:-1] + (path[-1] + 0.5,) # nope
+      pass
+    ivars[path] = [(vn, ['var', next(vids)]) for vn in stmt[2]]
+    vvars[path] = [(vn, ['var', next(vids)]) for vn in stmt[3]]
   walk(code, f)
-  return vars_
+  return ivars, vvars
 
 def evenmatch(path1, path2):
   return len([*itertools.takewhile(lambda x: x[0] == x[1], zip(path1, path2))]) % 2 == 0
@@ -59,7 +59,7 @@ def resolvevar(var, vars_, vpath):
     return ['literal', constanttypes[name], name]
   assert False, f'{var}, {vpath}, {paths}, {[vars_[path] for path in paths]}'
 
-def resolvevars(code, vars_):
+def resolvevars(code, ivars, vvars):
   # basically search backwards in the order they appear in the program
   # include statements before and their subblocks
   # and statements above (not their subblocks)
@@ -67,6 +67,8 @@ def resolvevars(code, vars_):
   # should be all statements before except in adjacent subblocks
   # this disallows cyclic impulse and data chains
   def f(stmt, path):
-    stmt[1] = [vi for vn,vi in (vars_[path] if path in vars_ else vars_[path[:-1] + (path[-1] + 0.5,)])]
-    stmt[4] = [resolvevar(v, vars_, path) for v in stmt[4]]
+    stmt[2] = [resolvevar(v, ivars, path) for v in stmt[2]]
+    stmt[3] = [resolvevar(v, vvars, path) for v in stmt[3]]
+    stmt[4] = [vi for vn,vi in (ivars[path] if path in ivars else ivars[path[:-1] + (path[-1] + 0.5,)])]
+    stmt[5] = [vi for vn,vi in (vvars[path] if path in vvars else vvars[path[:-1] + (path[-1] + 0.5,)])]
   walk(code, f)

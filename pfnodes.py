@@ -273,7 +273,7 @@ def fixnode(node, name):
   node['linear'] = False
   return
 
-for name,node in nodes.values():
+for name,node in nodes.items():
   fixnode(node, name)
 
 def getnode(name):
