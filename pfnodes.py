@@ -2,19 +2,26 @@ nodes = {
   ('Bounding', 'Box', 'Properties'): {
     'in': [['BoundingBox', 'Bounds']],
     'out': [['float3', 'Min'], ['float3', 'Max'], ['float3', 'Center'], ['float3', 'Size'], ['bool', 'Valid'], ['bool', 'Empty']],
+    'node': '[ProtoFluxBindings]ProtoFlux.Runtimes.Execution.Nodes.Math.Bounds.BoundingBoxProperties',
   },
   ('Children', 'Count'): {
     'in': [['Slot', 'Instance']],
     'out': 'int',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.ChildrenCount',
   },
   ('Compute', 'Bounding', 'Box'): {
     'in': [['Slot', 'Instance'], ['bool', 'IncludeInactive'], ['Slot', 'CoordinateSpace'], ['string', 'OnlyWithTag']],
     'out': 'BoundingBox',
+    'node':'[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Math.Bounds.ComputeBoundingBox',
   },
   ('Conditional',): {
     'tag': 'type', # a type tag is also added to the node type
     'in': [['$', 'OnTrue'], ['$', 'OnFalse'], ['bool', 'Condition']],
     'out': '$',
+    'node': { # use a different node depending on if the type is a value type or an object type
+      '$object': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ObjectConditional',
+      '$value': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueConditional',
+    }
   },
   ('Div',): {
     'tag': 'type',
@@ -26,53 +33,65 @@ nodes = {
     'impulses': True, # a node with impulses: True must have named output arguments and an impulse out called Next
     'in': [['Slot', 'Template'], ['Slot', 'OverrideParent']],
     'out': [['Slot', 'Duplicate']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.DuplicateSlot',
   },
   ('Dynamic', 'Impulse', 'Trigger'): {
     'impulses': True,
     'in': [['string', 'Tag'], ['Slot', 'TargetHierarchy'], ['bool', 'ExcludeDisabled']],
     'out': 'int',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Actions.DynamicImpulseTrigger',
   },
   ('Find', 'Child', 'By', 'Name'): {
     'in': [['Slot', 'Instance'], ['string', 'Name'], ['bool', 'MatchSubstring'], ['bool', 'IgnoreCase'], ['int', 'SearchDepth']],
     'out': 'Slot',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.FindChildByName',
   },
   ('Find', 'Child', 'By', 'Tag'): {
     'in': [['Slot', 'Instance'], ['string', 'Tag'], ['int', 'SearchDepth']],
     'out': 'Slot',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.FindChildByTag',
   },
   ('For',): {
     'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration', 'LoopEnd']], # LoopEnd connects to the next statement
     'in': [['int', 'Count'], ['bool', 'Reverse ']],
     'out': [['int', 'iteration']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.For',
   },
   ('Get', 'Active', 'User', 'Self'): {
     'in': [],
     'out': 'User',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.GetActiveUserSelf',
   },
   ('Get', 'Child'): {
     'in': [['Slot', 'Instance'], ['int', 'ChildIndex']],
     'out': 'Slot',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.GetChild',
   },
   ('Get', 'Side'): {
     'in': [['BodyNode', 'Node'], ['Chirality', 'Side']],
     'out': 'BodyNode',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Avatar.BodyNodes.GetSide',
   },
   ('Get', 'Slot'): {
     'in': [['Component', 'Component']],
     'out': 'Slot',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.GetSlot',
   },
   ('Get', 'User', 'Grabber'): {
     'in': [['User', 'User'], ['BodyNode', 'Node']],
     'out': 'Grabber',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction.GetUserGrabber',
   },
   ('If',): {
     'impulses': [True, ['OnTrue', 'OnFalse']], # both branches connect to the next statement
     'in': [['bool', 'Condition']],
     'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.If',
   },
   ('Local', 'Transform'): {
     'in': [['Slot', 'Instance']],
     'out': [['float3', 'Position'], ['floatq', 'Rotation'], ['float3', 'Scale']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Transform.LocalTransform',
   },
   ('Min',): {
     'tag': 'type',
@@ -107,8 +126,18 @@ nodes = {
       {
         'in': [['float', 'A'], ['float3', 'B']],
         'out': 'float3',
+        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.Mul_Float_Float3',
       },
     ],
+  },
+  ('Multiplex',): {
+    'tag': 'type',
+    'in': [['int', 'Index'], ['*$', 'Inputs']], # * means list of inputs
+    'out': '$',
+    'node': { # use a different node depending on if the type is a value type or an object type
+      '$object': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ObjectMultiplex',
+      '$value': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueMultiplex',
+    }
   },
   ('NOT',): {
     'in': [['bool', 'A']],
@@ -141,20 +170,24 @@ nodes = {
     'impulses': True,
     'in': [['Slot', 'Instance'], ['float3', 'Position']],
     'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Transform.SetLocalPosition',
   },
   ('Set', 'Local', 'Scale'): {
     'impulses': True,
     'in': [['Slot', 'Instance'], ['float3', 'Scale']],
     'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Transform.SetLocalScale',
   },
   ('Set', 'Parent'): {
     'impulses': True,
     'in': [['Slot', 'Instance'], ['Slot', 'NewParent'], ['bool', 'PreserveGlobalPosition']],
     'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SetParent',
   },
   ('Tool', 'Equipping', 'Side'): {
     'in': [['Tool', 'Tool']],
     'out': 'Chirality',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction.Tools.ToolEquippingSide',
   },
   ('Unpack', 'xyz'): {
     'in': [['float3', '']],
@@ -164,12 +197,17 @@ nodes = {
   ('User', 'Root', 'Slot'): {
     'in': [['User', 'User']],
     'out': 'Slot',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Users.UserRootSlot',
   },
   ('Write', 'Dynamic', 'Variable'): {
     'tag': 'type',
     'impulses': ['OnSuccess', ['OnSuccess', 'OnNotFound', 'OnFailed']], # i'm assuming you would want to continue from OnSuccess usually
     'in': [['Slot', 'Target'], ['string', 'Path'], ['$', 'Value']],
     'out': [],
+    'node': { # use a different node depending on if the type is a value type or an object type
+      '$object': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables.WriteDynamicObjectVariable',
+      '$value': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Variables.WriteDynamicValueVariable',
+    }
   },
   ('Continue',): {
     'impulses': True, # return current impulse explicitly
@@ -180,11 +218,13 @@ nodes = {
     'impulses': 'builtin',
     'in': [['int', 'Index']],
     'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ImpulseMultiplexer',
   },
   ('Impulse', 'Demultiplexer'): {
     'impulses': 'builtin',
     'in': [],
     'out': [['int', 'Index']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ImpulseDemultiplexer',
   },
   ('Join',): {
     'impulses': 'builtin', # join two impulses into one - like impulse demultiplexer with no index
@@ -199,7 +239,8 @@ nodes = {
   },
 }
 
-def fixnodeimpulses(node):
+def fixnode(node, name):
+  node['name'] = name
   if 'impulses' not in node:
     return
   impulses = node['impulses']
@@ -232,8 +273,8 @@ def fixnodeimpulses(node):
   node['linear'] = False
   return
 
-for node in nodes.values():
-  fixnodeimpulses(node)
+for name,node in nodes.values():
+  fixnode(node, name)
 
 def getnode(name):
   # will add node aliases eventually
