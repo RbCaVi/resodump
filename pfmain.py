@@ -411,7 +411,7 @@ if False: # toposort nodes and print out code (but joined impulses aren't handle
       if t[1] == 'bool':
         return 'true' if t[2] else 'false'
       if t[1] == 'array':
-        return '[' + ', '.join(render(['literal', *x]) for x in t[2]) + ']'
+        return '[' + ', '.join(render(['literal', t[2], x]) for x in t[3]) + ']'
       if t[1] == 'null':
         return 'null'
       if t[1] == 'float':
@@ -522,12 +522,9 @@ def typeof(v):
     if v[1] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode']:
       return {v[1]}
     if v[1] == 'array':
-      assert all(e[0] in ['int', 'float'] for e in v[2]), f'array with disallowed types: {v}'
-      typ = 'int'
-      if any(e[0] == 'float' for e in v[2]):
-        typ = 'float'
-      assert len(v[2]) in [1, 2, 3, 4], f'array with disallowed length: {v}'
-      return {typ + str(len(v[2]))}
+      typ = v[2]
+      assert len(v[3]) in [1, 2, 3, 4], f'array with disallowed length: {v}'
+      return {typ + str(len(v[3]))}
   return types[tuple(v)]
 
 for node in finalcode:

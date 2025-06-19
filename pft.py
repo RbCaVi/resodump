@@ -110,7 +110,11 @@ def pass1(tokens):
           token,tokens = gettoken(tokens)
           assert token[0] in ['int', 'float'], f'error: disallowed component type: {token}'
           components.append(token)
-        token = ['literal', 'array', components]
+        if 'float' in [t for t,v in components]:
+          ctype = 'float'
+        else:
+          ctype = 'int'
+        token = ['literal', 'array', ctype, tuple(v for t,v in components)]
       else:
         assert False, f'error: [ before non name or number: {token}'
     elif token[0] == ']':
