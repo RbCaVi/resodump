@@ -534,14 +534,18 @@ for node in finalcode:
   #print('n', node)
   intypes,outtypes = gettypes(pfnodes.getnode(node[0][1]), [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
   #print('t', intypes,outtypes)
-  if set(['nope']) in intypes + outtypes:
+  if set(['nope']) in intypes + outtypes or set() in intypes + outtypes:
     print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
   for it,iv in zip(intypes, node[3]):
     if iv[0] == 'var':
-      #print('set', types[tuple(iv)], it, iv)
+      #print('set', types[tuple(iv)], it, iv, intersecttypes(types[tuple(iv)], it))
+      if set(['nope']) == intersecttypes(types[tuple(iv)], it) or set() == intersecttypes(types[tuple(iv)], it):
+        print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
       types[tuple(iv)] = intersecttypes(types[tuple(iv)], it)
   for ot,ov in zip(outtypes, node[5]):
-    #print('set', types[tuple(ov)], ot, ov)
+    #print('set', types[tuple(ov)], ot, ov, intersecttypes(types[tuple(ov)], ot))
+    if set(['nope']) == intersecttypes(types[tuple(ov)], ot) or set() == intersecttypes(types[tuple(ov)], ot):
+      print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
     types[tuple(ov)] = intersecttypes(types[tuple(ov)], ot)
 
 # now for generation (?)
