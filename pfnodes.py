@@ -2,7 +2,7 @@ nodes = {
   ('Bounding', 'Box', 'Properties'): {
     'in': [['BoundingBox', 'Bounds']],
     'out': [['float3', 'Min'], ['float3', 'Max'], ['float3', 'Center'], ['float3', 'Size'], ['bool', 'Valid'], ['bool', 'Empty']],
-    'node': '[ProtoFluxBindings]ProtoFlux.Runtimes.Execution.Nodes.Math.Bounds.BoundingBoxProperties',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Math.Bounds.BoundingBoxProperties',
   },
   ('Children', 'Count'): {
     'in': [['Slot', 'Instance']],
