@@ -45,10 +45,10 @@ def stripfunctions(code):
     newsubstmts = []
     for substmt in block:
       if substmt[0] == ['name', ('Function',)]:
-        assert substmt[4] == [], 'Function does not return impulses'
-        assert substmt[5] == [], 'Function does not return values'
+        assert len(substmt[4]) == 0, 'Function does not return impulses'
+        assert len(substmt[5]) == 0, 'Function does not return values'
         assert substmt[1] == None, 'Function does not have a tag'
-        assert substmt[2] == [], 'Function does not take impulses'
+        assert len(substmt[2]) == 0, 'Function does not take impulses'
         funcargs = substmt[3]
         assert len(substmt[6]) == 1, 'Function should have one subblock'
         subblock = substmt[6][0]
@@ -128,30 +128,30 @@ def flattenbranches(code, ivarlist):
             block = []
           var = ['var', ('ib', next(vids))]
           ivarlist.append(var)
-          block.insert(0, [['name', ('Continue',)], None, [var], [], [], [], []])
+          block.insert(0, [['name', ('Continue',)], None, [var], [], [], [], ()])
           invars.append(var)
           var = ['var', ('ic', next(vids))]
           ivarlist.append(var)
-          block.append([['name', ('Continue',)], None, [], [], [var], [], []])
+          block.append([['name', ('Continue',)], None, [], [], [var], [], ()])
           if connectout:
             outvars.append(var)
           newcode += block
         substmt[6] = []
         substmt[4] = invars
         if len(outvars) > 0:
-          newcode.append([['name', ('Join',)], None, outvars, [], [], [], []])
+          newcode.append([['name', ('Join',)], None, [outvars], [], [], [], ()])
     return newcode
   return f(code)
 
 def renameimpulse(code, pat, repl):
   for stmt in code:
-    stmt[2] = [repl if v == pat else v for v in stmt[2]]
-    stmt[4] = [repl if v == pat else v for v in stmt[4]]
+    stmt[2] = tuple(repl if v == pat else v for v in stmt[2])
+    stmt[4] = tuple(repl if v == pat else v for v in stmt[4])
 
 def renamevar(code, pat, repl):
   for stmt in code:
-    stmt[3] = [repl if v == pat else v for v in stmt[3]]
-    stmt[5] = [repl if v == pat else v for v in stmt[5]]
+    stmt[3] = tuple(repl if v == pat else v for v in stmt[3])
+    stmt[5] = tuple(repl if v == pat else v for v in stmt[5])
 
 def removejoins(code):
   # also removes continues :)

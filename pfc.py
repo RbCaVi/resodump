@@ -50,13 +50,13 @@ def resolvevar(var, vars_, vpath):
         return varid
   name = ' '.join(var[1])
   if name.lower() == 'true':
-    return ['literal', 'bool', True]
+    return ('literal', 'bool', True)
   if name.lower() == 'false':
-    return ['literal', 'bool', False]
+    return ('literal', 'bool', False)
   if name.lower() == 'null':
-    return ['literal', 'null', None]
+    return ('literal', 'null', None)
   if name in constanttypes:
-    return ['literal', constanttypes[name], name]
+    return ('literal', constanttypes[name], name)
   assert False, f'{var}, {vpath}, {paths}, {[vars_[path] for path in paths]}'
 
 def resolvevars(code, ivars, vvars):

@@ -114,7 +114,7 @@ def pass1(tokens):
           ctype = 'float'
         else:
           ctype = 'int'
-        token = ['literal', 'array', ctype, tuple(v for t,v in components)]
+        token = ('literal', 'array', ctype, tuple(v for t,v in components))
       else:
         assert False, f'error: [ before non name or number: {token}'
     elif token[0] == ']':
@@ -132,7 +132,7 @@ def pass1(tokens):
       assert token[0] in ['name', 'int', 'float', 'string'], f'error: < before non name: {token}'
       close,tokens = gettoken(tokens)
       assert close[0] == '>', f'error: no matching >: {close}'
-      token = ['tag', token]
+      token = ('tag', token)
     elif token[0] == '>':
       assert False, 'error: unmatched >'
     elif token[0] == '=':
@@ -145,9 +145,9 @@ def pass1(tokens):
         assert token[0] in ['name', 'iname'], f'error: non name before , and =: {token}'
         assert token not in names, f'error: duplicate variable: {token}'
         names.insert(0, token)
-      token = ['assign', names]
+      token = ('assign', tuple(names))
     if token[0] in ['float', 'int', 'string', 'rname']:
-      token = ['literal', token[0], token[1]]
+      token = ('literal', token[0], token[1])
     out.append(token)
   return out
 
@@ -159,7 +159,7 @@ def pass2(tokens):
     if token[0] == '(':
       token,tokens = gettoken(tokens)
       if token[0] == ')':
-        token = ['args', []]
+        token = ('args', ())
       else:
         assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
         args = [token]
@@ -171,7 +171,7 @@ def pass2(tokens):
           token,tokens = gettoken(tokens)
           assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
           args.append(token)
-        token = ['args', args]
+        token = ('args', tuple(args))
     elif token[0] == ')':
       assert False, 'error: unmatched )'
     out.append(token)
@@ -196,8 +196,8 @@ def pass3(tokens):
         token = out.pop()
         vars_ = token[1]
       else:
-        vars_ = []
-      token = ['stmt', vars_, func, tag, args, []]
+        vars_ = ()
+      token = ('stmt', vars_, func, tag, args, [])
     out.append(token)
   return out
 
@@ -238,7 +238,7 @@ def filter2(f, l):
       l1.append(x)
     else:
       l2.append(x)
-  return l1, l2
+  return tuple(l1), tuple(l2)
 
 def reformatstmt(stmt):
   # reformat the statement
