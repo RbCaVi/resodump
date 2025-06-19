@@ -548,16 +548,77 @@ for node in finalcode:
 # now for generation (?)
 # casts might be an issue...
 # eh
+def choosenode(nodedata, intypes, outtypes):
+  if 'forms' in nodedata:
+    # uh...
+    # in and out
+    nodes = [choosenode(form, intypes, outtypes) for form in nodedata['forms']]
+    nodes = [node for node in nodes if node is not None]
+    if len(nodes) > 1:
+      print(f"INFO: choosing one node of {nodes}")
+    return nodes[0]
+  nodein = nodedata['in']
+  nodeout = nodedata['out']
+  if type(nodeout) == str:
+    nodeout = [[nodeout, '*']]
+  if len(nodein) == 1 and nodein[0][0] == '*$':
+    nodein = [['$', None] for t in intypes]
+  if len(intypes) != len(nodein):
+    return None
+  if len(outtypes) != len(nodeout):
+    return None
+  # find $ as intersection of input and output $ types
+  # you might be able to narrow the type of a non directly connected node
+  # because inputs also change the type of the variables connected to them
+  # so i can propagate the type backward to nodes with only generic outputs
+  # like Read Dynamic Variable
+  if '$' in [t for t,n in nodein] + [t for t,n in nodeout]:
+    gtype = intersecttypes(*[it for it,(t,n) in zip(intypes, nodein) if t == '$'], *[ot for ot,(t,n) in zip(outtypes, nodeout) if t == '$'])
+    #print(gtype, [it for it,(t,n) in zip(intypes, nodein) if t == '$'], [ot for ot,(t,n) in zip(outtypes, nodeout) if t == '$'])
+    nodein = [(gtype if t == '$' else {t}, n) for t,n in nodein]
+    nodeout = [(gtype if t == '$' else {t}, n) for t,n in nodeout]
+  else:
+    gtype = None
+  if any(intersecttypes2(it, t) == set() for it,(t,n) in zip(intypes, nodein)) or any(intersecttypes2(ot, t) == set() for ot,(t,n) in zip(outtypes, nodeout)):
+    return None
+  return [nodedata['node'], gtype]
 
-def generatenode(node):
-  nodename = pfnodes.getnode(node[0][1])
-  intypes = [typeof(v) for v in node[3]]
-  outtypes = [typeof(v) for v in node[5]]
-  nodeclass = choosenode(nodename, intypes, outtypes)
-  nodecomponent = {}
+constants = []
+
+for node in finalcode:
+  for arg in node[3]:
+    if arg[0] == 'var':
+      continue
+    print(arg)
 
 # the final node data
 nodes = []
+
+# i don't have to fill these out now ;)
+valuetypes = ['bool', 'float']
+objecttypes = []
+
+def generatenode(node):
+  nodedata = pfnodes.getnode(node[0][1])
+  intypes = [typeof(v) for v in node[3]]
+  outtypes = [typeof(v) for v in node[5]]
+  nodeclass = choosenode(nodedata, intypes, outtypes)
+  nodecomponent = {}
+  #print(node[0][1], intypes, outtypes, nodeclass)
+  nodeclass,generictype = nodeclass
+  if generictype is not None:
+    generictype = [*generictype][0]
+    if type(nodeclass) == dict:
+      if generictype in valuetypes:
+        nodeclass = nodeclass['$value'] + '<' + generictype + '>'
+      elif generictype in objecttypes:
+        nodeclass = nodeclass['$object'] + '<' + generictype + '>'
+      else:
+        assert False, f'error: type {generictype} not recognized as object or value type'
+    else:
+      nodeclass = nodeclass + '<' + generictype + '>'
+  
+  print(nodeclass)
 
 for node in finalcode:
   generatenode(node)
