@@ -71,7 +71,7 @@ def lexone(s):
   if m is not None:
     n = m[0]
     s = s[len(n):]
-    n = n.split()
+    n = tuple(n.split())
     return ['name', n], s
   assert False, 'no match ): ' + repr(s[:20])
 

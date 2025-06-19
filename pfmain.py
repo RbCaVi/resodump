@@ -44,7 +44,7 @@ def stripfunctions(code):
   def f(block, path):
     newsubstmts = []
     for substmt in block:
-      if substmt[0] == ['name', ['Function']]:
+      if substmt[0] == ['name', ('Function',)]:
         assert substmt[4] == [], 'Function does not return impulses'
         assert substmt[5] == [], 'Function does not return values'
         assert substmt[1] == None, 'Function does not have a tag'
@@ -70,7 +70,7 @@ def stripdatanodes(code):
   def f(block, path):
     newsubstmts = []
     for substmt in block:
-      if substmt[0][0] == 'fname' or 'impulsein' in pfnodes.getnode(substmt[0][1]) or substmt[0][1] == ['Return'] or substmt[0][1] == ['Impulse', 'Demultiplexer'] or substmt[0][1] == ['Join']:
+      if substmt[0][0] == 'fname' or 'impulsein' in pfnodes.getnode(substmt[0][1]) or substmt[0][1] == ('Return',) or substmt[0][1] == ('Impulse', 'Demultiplexer') or substmt[0][1] == ('Join',):
         newsubstmts.append(substmt)
       else:
         datanodes.append(substmt)
@@ -82,7 +82,7 @@ def addlinearimpulses(code, ivarlist):
   # make linear nodes (one impulse in, one impulse out) have explicit impulses
   def f(block, path):
     for substmt1,substmt2 in zip(block, block[1:]):
-      if substmt1[0][0] == 'name' and substmt1[0][1] != ['Impulse', 'Demultiplexer'] and substmt1[0][1] != ['Join'] and not pfnodes.getnode(substmt1[0][1])['linear']:
+      if substmt1[0][0] == 'name' and substmt1[0][1] != ('Impulse', 'Demultiplexer') and substmt1[0][1] != ('Join',) and not pfnodes.getnode(substmt1[0][1])['linear']:
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
         continue
@@ -99,6 +99,8 @@ def addlinearimpulses(code, ivarlist):
         if substmt2[0][0] != 'name' or pfnodes.getnode(substmt2[0][1])['impulsein']:
           # the second statement takes an impulse input
           substmt2[2].insert(0, var)
+        else:
+          print(substmt2[0], 'doesn\'t take an impulse in')
   walk2(code, f)
 
 def flattenbranches(code, ivarlist):
@@ -108,7 +110,7 @@ def flattenbranches(code, ivarlist):
     newcode = []
     for substmt in code:
       newcode.append(substmt)
-      if substmt[0][0] == 'name' and substmt[0][1] != ['Impulse', 'Demultiplexer'] and substmt[0][1] != ['Join'] and not pfnodes.getnode(substmt[0][1])['linear']:
+      if substmt[0][0] == 'name' and substmt[0][1] != ('Impulse', 'Demultiplexer') and substmt[0][1] != ('Join',) and not pfnodes.getnode(substmt[0][1])['linear']:
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
         if len(substmt[4]) != 0:
@@ -120,24 +122,24 @@ def flattenbranches(code, ivarlist):
         invars = [] # going into the blocks
         outvars = [] # going out of the blocks
         for name,connectout in pfnodes.getnode(substmt[0][1])['impulseout']:
-          if ['name', [name]] in [name for name,block in blocks]:
-            block = [block for bname,block in blocks if bname == ['name', [name]]][0]
+          if ['name', (name,)] in [name for name,block in blocks]:
+            block = [block for bname,block in blocks if bname == ['name', (name,)]][0]
           else:
             block = []
           var = ['var', ('ib', next(vids))]
           ivarlist.append(var)
-          block.insert(0, [['name', ['Continue']], None, [var], [], [], [], []])
+          block.insert(0, [['name', ('Continue',)], None, [var], [], [], [], []])
           invars.append(var)
           var = ['var', ('ic', next(vids))]
           ivarlist.append(var)
-          block.append([['name', ['Continue']], None, [], [], [var], [], []])
+          block.append([['name', ('Continue',)], None, [], [], [var], [], []])
           if connectout:
             outvars.append(var)
           newcode += block
         substmt[6] = []
         substmt[4] = invars
         if len(outvars) > 0:
-          newcode.append([['name', ['Join']], None, outvars, [], [], [], []])
+          newcode.append([['name', ('Join',)], None, outvars, [], [], [], []])
     return newcode
   return f(code)
 
@@ -156,7 +158,7 @@ def removejoins(code):
   # i could just say continue is join one input
   # but that would mean i have to special case it for addlinearimpulses()
   for stmt in code:
-    if stmt[0] not in [['name', ['Join']], ['name', ['Continue']]]:
+    if stmt[0] not in [['name', ('Join',)], ['name', ('Continue',)]]:
       continue
     name,tag,argsi,argsv,retsi,retsv,subblocks = stmt
     assert tag is None, f'Join or Continue cannot have a tag: {stmt}'
@@ -167,7 +169,7 @@ def removejoins(code):
     assert len(retsi) == 1, f'Join or Continue cannot have more than one impulse output: {stmt}'
     for arg in argsi:
       renameimpulse(code, arg, retsi[0])
-  code = [s for s in code if s[0] not in [['name', ['Join']], ['name', ['Continue']]]]
+  code = [s for s in code if s[0] not in [['name', ('Join',)], ['name', ('Continue',)]]]
   return code
 
 with open('l.pft') as f:
@@ -190,17 +192,17 @@ functions[()] = [[], code]
 for fdef in functions.values():
   args,code = fdef
   ivars,vvars = pfc.findvars(code)
-  argvars = [['var', i - len(args), 'name'] for i in range(len(args))]
+  argvars = [['var', i - len(args)] for i in range(len(args))]
   vvars[(-1,)] = argvars
   pfc.resolvevars(code, ivars, vvars)
   datanodes = stripdatanodes(code)
   ivarlist = [v for vs in ivars.values() for n,v in vs]
   vvarlist = [v for vs in vvars.values() for n,v in vs]
   code = flattenbranches(code, ivarlist)
-  if code[-1][0] == ['name', ['Return']]:
+  if code[-1][0] == ['name', ('Return',)]:
     var = ['var', 'ie'] # this will be stripped by removejoins(), but it'll leave an impulse input on the first statement for an entry point
     ivarlist.append(var)
-    code.insert(0, [['name', ['Continue']], None, [var], [], [], [], []])
+    code.insert(0, [['name', ('Continue',)], None, [var], [], [], [], []])
     ret = code[-1]
   else:
     ret = None
@@ -274,15 +276,15 @@ for name,fcalls in calls.items():
   retvs = [*zip(*retvs, strict = True)]
   var = ['var', ('if', next(vids))]
   vvarlist.append(var)
-  finalcode.append([['name', ['Impulse', 'Demultiplexer']], None, [*argis], [], [argi], [var], []])
-  finalcode.append([['name', ['Impulse', 'Multiplexer']], None, [reti], [var], [*retis], [], []])
+  finalcode.append([['name', ('Impulse', 'Demultiplexer',)], None, [*argis], [], [argi], [var], []])
+  finalcode.append([['name', ('Impulse', 'Multiplexer',)], None, [reti], [var], [*retis], [], []])
   for arg,argv in zip(args, argvs):
-    finalcode.append([['name', ['Multiplex']], None, [], [var, *argv], [], [arg], []])
+    finalcode.append([['name', ('Multiplex',)], None, [], [var, *argv], [], [arg], []])
   for ret,retv in zip(rets, retvs):
     for rv in retv:
       renamevar(finalcode, rv, ret)
 
-finalcode = [s for s in finalcode if s[0] not in [['name', ['Return']]]]
+finalcode = [s for s in finalcode if s[0] not in [['name', ('Return',)]]]
 
 ivars = []
 vvars = []
@@ -482,11 +484,11 @@ def gettypes(nodedata, intypes, outtypes):
     # uh...
     # in and out
     intypes2,outtypes2 = zip(*[gettypes(form, intypes, outtypes) for form in nodedata['forms']])
-    print(nodedata)
-    print(intypes, outtypes, intypes2, outtypes2)
+    #print(nodedata)
+    #print(intypes, outtypes, intypes2, outtypes2)
     intypes = [intersecttypes2(it, t) for it,t in zip(intypes, map(uniontypes, *intypes2))]
     outtypes = [intersecttypes2(it, t) for it,t in zip(outtypes, map(uniontypes, *outtypes2))]
-    print('yee', intypes, outtypes)
+    #print('yee', intypes, outtypes)
     return intypes, outtypes
   nodein = nodedata['in']
   nodeout = nodedata['out']
