@@ -14,10 +14,10 @@ def findvars(code):
   vvars = {}
   vids = itertools.count()
   def f(stmt, path):
-    if stmt[0] in [['name', ['If']], ['name', ['Impulse', 'Multiplexer']]]:
-      # if and impulse multiplexer can return values :)
-      #path = path[:-1] + (path[-1] + 0.5,) # nope
-      pass
+    #if stmt[0] in [['name', ('If',)], ['name', ('Impulse', 'Multiplexer',)]]:
+    #  # if and impulse multiplexer can return values :)
+    #  #path = path[:-1] + (path[-1] + 0.5,) # nope
+    #  pass
     ivars[path] = [(vn, ['var', next(vids)]) for vn in stmt[4]]
     vvars[path] = [(vn, ['var', next(vids)]) for vn in stmt[5]]
   walk(code, f)
