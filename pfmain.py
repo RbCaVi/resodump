@@ -1,5 +1,6 @@
 import itertools
 import functools
+import re
 
 import pft
 import pfc
@@ -320,8 +321,8 @@ def asid(val):
     'Data': None,
   }
 
-def fromcomponents(cs):
-  return {'Components': cs}
+def fromcomponents(name, cs):
+  return {'Name': name, 'Components': cs}
 
 def generatenode(node, intypes, outtypes):
   nodedata = pfnodes.getnode(node[0][1])
@@ -333,30 +334,30 @@ def generatenode(node, intypes, outtypes):
     generictype = [*generictype][0]
     if type(nodeclass) == dict:
       if generictype in valuetypes:
-        nodeclass = nodeclass['$value'] + '<' + generictype + '>'
+        nodeclass = nodeclass['$value'] + '<' + typename(generictype) + '>'
       elif generictype in objecttypes:
-        nodeclass = nodeclass['$object'] + '<' + generictype + '>'
+        nodeclass = nodeclass['$object'] + '<' + typename(generictype) + '>'
       else:
         assert False, f'error: type {generictype} not recognized as object or value type'
     else:
-      nodeclass = nodeclass + '<' + generictype + '>'
+      nodeclass = nodeclass + '<' + typename(generictype) + '>'
   
   print(nodeclass)
   print([n for t,n in nodedata['in']])
-  nodeslot = {
+  nodecomponent = {
     'type': nodeclass,
   }
   if 'impulsein' in nodedata:
     print([n for n,c in nodedata['impulseout']])
   for (t,n),v in zip(nodedata['in'], node[3]):
-    nodeslot[n] = asmember('###' + repr(v) + '###')
+    nodecomponent[n] = asmember('###' + repr(tuple(v)) + '###')
   if type(nodedata['out']) == list:
     print([n for t,n in nodedata['out']])
     for (t,n),v in zip(nodedata['out'], node[5]):
-      nodeslot[n] = asid(repr(v))
+      nodecomponent[n] = asid(repr(tuple(v)))
   else:
-    nodeslot['id'] = repr(node[5][0])
-  return nodeslot
+    nodecomponent['id'] = repr(tuple(node[5][0]))
+  return fromcomponents(re.sub('(^|<)[^<>,]*\\.', '\\1', nodeclass), [nodecomponent])
 
 def generate(s):
   code = pft.parse(s)
@@ -662,14 +663,15 @@ def generate(s):
   # the final node data
   nodes = []
 
-  for _,ctype,cval in constants:
+  for c in constants:
+    _,ctype,cval = c
     print(ctype, cval)
     if ctype == 'Slot':
       assert len(cval) == 1, 'reference names must not include whitespace'
-      nodes.append(fromcomponents([
+      nodes.append(fromcomponents(ctype + ' input', [
         {
           'type': '[ProtoFluxBindings]FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.SlotSource',
-          'id': repr((ctype, cval)),
+          'id': repr(c),
           'Source': asmember('###' + repr((ctype, cval, 'source')) + '###'),
         },
         {
@@ -680,10 +682,10 @@ def generate(s):
       ]))
     elif ctype in elementtypes:
       assert len(cval) == 1, 'reference names must not include whitespace'
-      nodes.append(fromcomponents([
+      nodes.append(fromcomponents(ctype + ' input', [
         {
-          'type': '[ProtoFluxBindings]FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ElementSource',
-          'id': repr((ctype, cval)),
+          'type': '[ProtoFluxBindings]FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ElementSource<' + typename(ctype) + '>',
+          'id': repr(c),
           'Source': asmember('###' + repr((ctype, cval, 'source')) + '###'),
         },
         {
@@ -693,15 +695,15 @@ def generate(s):
         },
       ]))
     elif ctype in valuetypes:
-      nodes.append(fromcomponents([{
+      nodes.append(fromcomponents(ctype + ' input', [{
         'type': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueInput<' + typename(ctype) + '>',
-        'id': repr((ctype, cval)),
+        'id': repr(c),
         'Value': asmember(cval),
       }]))
     elif ctype in objecttypes:
-      nodes.append(fromcomponents([{
-        'type': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ObjectInput<' + typename(ctype) + '>',
-        'id': repr((ctype, cval)),
+      nodes.append(fromcomponents(ctype + ' input', [{
+        'type': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueObjectInput<' + typename(ctype) + '>',
+        'id': repr(c),
         'Value': asmember(cval),
       }]))
     else:
@@ -711,6 +713,10 @@ def generate(s):
     intypes = [typeof(v) for v in node[3]]
     outtypes = [typeof(v) for v in node[5]]
     nodes.append(generatenode(node, intypes, outtypes))
+  
+  for i,node in enumerate(nodes):
+    node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]
+    print(node['Name'])
   
   return nodes
 
