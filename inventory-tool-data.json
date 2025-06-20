@@ -141,7 +141,7 @@
               {"Name": "Items",
                 "Tag": "RbCaViInventoryItems"
               },
-              {"Name": "Code", "source": "k.pft"}
+              {"Name": "Code", "source": "j.pft"}
             ]
           },
           {"Name": "Item Slot", "id": "inventoryslot",
@@ -171,10 +171,7 @@
               }
             ],
             "Children": [
-              {"Name": "Code",
-                "Children": [
-                ]
-              }
+              {"Name": "Code", "source": "k.pft"}
             ]
           }
         ]
