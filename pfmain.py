@@ -109,11 +109,13 @@ def flattenbranches(code, ivarlist):
     for substmt in code:
       newcode.append(substmt)
       if substmt[0][0] == 'name' and substmt[0][1] != ('Impulse', 'Demultiplexer') and substmt[0][1] != ('Join',) and not pfnodes.getnode(substmt[0][1])['linear']:
+        print(substmt)
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
         if len(substmt[4]) != 0:
           # has explicit impulses, not handled here
           assert len(substmt[6]) == 0, 'statement with explicit impulse outputs may not also have subblocks'
+          substmt[6:] = []
           continue
         blocks = substmt[6]
         blocks = [[name, f(block)] for name,block in blocks]
@@ -254,7 +256,7 @@ def gettypes(nodedata, intypes, outtypes):
   return [gtype if t == '$' else {t} for t,n in nodein], [gtype if t == '$' else {t} for t,n in nodeout]
 
 # not final
-valuetypes = ['bool', 'float', 'int', 'BodyNode', 'int3']
+valuetypes = ['bool', 'float', 'int', 'BodyNode', 'float3']
 objecttypes = ['string']
 reftypes = ['Slot', 'Tool']
 elementtypes = ['Tool']
@@ -303,7 +305,7 @@ def typename(t):
     'float': 'float',
     'int': 'int',
     'string': 'string',
-    'int3': 'int3',
+    'float3': 'float3',
     'Slot': '[FrooxEngine]FrooxEngine.Slot',
     'BodyNode': '[FrooxEngine]FrooxEngine.BodyNode',
     'Tool': '[FrooxEngine]FrooxEngine.ITool', # i don't think this was a good idea
@@ -330,33 +332,63 @@ def fromcomponents(name, cs):
 
 def generatenode(node, intypes, outtypes, pid):
   nodedata = pfnodes.getnode(node[0][1])
-  nodedata,generictype = choosenode(nodedata, intypes, outtypes)
-  nodecomponent = {}
-  #print(node[0][1], intypes, outtypes, nodeclass)
-  nodeclass = nodedata['node']
-  if generictype is not None:
-    generictype = [*generictype][0]
-    if type(nodeclass) == dict:
-      if generictype in valuetypes:
-        nodeclass = nodeclass['$value'] + '<' + typename(generictype) + '>'
-      elif generictype in objecttypes:
-        nodeclass = nodeclass['$object'] + '<' + typename(generictype) + '>'
-      else:
-        assert False, f'error: type {generictype} not recognized as object or value type'
+  if node[0][1] == ('Cast',):
+    assert len(intypes) == 1
+    assert len(outtypes) == 1
+    generictype1 = [*intypes[0]][0]
+    generictype2 = [*outtypes[0]][0]
+    assert generictype1 in valuetypes
+    assert generictype2 in valuetypes
+    nodeclass = nodedata['node']
+    if (generictype1, generictype2) in [('int', 'float')]:
+      nodeclass = nodeclass + 'Cast_' + typename(generictype1) + '_To_' + typename(generictype2)
+    elif generictype1 in reftypes:
+      nodeclass = nodeclass + 'ObjectCast<' + typename(generictype1) + ',' + typename(generictype2) + '>'
     else:
-      nodeclass = nodeclass + '<' + typename(generictype) + '>'
+      nodeclass = nodeclass + 'ValueCast<' + typename(generictype1) + ',' + typename(generictype2) + '>'
+  else:
+    nodedata,generictype = choosenode(nodedata, intypes, outtypes)
+    #print(node[0][1], intypes, outtypes, nodeclass)
+    nodeclass = nodedata['node']
+    if generictype is not None:
+      generictype = [*generictype][0]
+      if type(nodeclass) == dict:
+        if generictype in valuetypes:
+          nodeclass = nodeclass['$value'] + '<' + typename(generictype) + '>'
+        elif generictype in objecttypes:
+          nodeclass = nodeclass['$object'] + '<' + typename(generictype) + '>'
+        else:
+          assert False, f'error: type {generictype} not recognized as object or value type'
+      else:
+        nodeclass = nodeclass + '<' + typename(generictype) + '>'
   
-  print(nodeclass)
-  print([n for t,n in nodedata['in']])
+  #print(nodeclass)
+  #print([n for t,n in nodedata['in']])
   nodecomponent = {
     'type': nodeclass,
   }
   if 'impulsein' in nodedata:
-    print([n for n,c in nodedata['impulseout']])
-  for (t,n),v in zip(nodedata['in'], node[3]):
-    nodecomponent[n] = asrefmember(v, pid)
+    #print([n for n,c in nodedata['impulseout']])
+    for (n,c),v in zip(nodedata['impulseout'], node[4]):
+      if v[1] is not None:
+        nodecomponent[n] = asrefmember(v, pid)
+    if nodedata['impulsein'] == True:
+      nodecomponent['id'] = asid(node[2][0], pid)['id']
+    elif nodedata['impulsein'] == False:
+      pass
+    else:
+      print(f'WARNING: {node} has unrecognized impulsein value: {nodedata}')
+  if node[0][1] == ('Impulse', 'Demultiplexer'):
+    nodecomponent['Operations'] = asmember([asid(v, pid) for v in node[2]])
+  if node[0][1] == ('Impulse', 'Multiplexer'):
+    nodecomponent['Impulses'] = asmember([asrefmember(v, pid) for v in node[4]])
+  if len(nodedata['in']) == 1 and nodedata['in'][0][1] == '*$':
+    nodecomponent[nodedata['in'][0][0]] = asmember([asrefmember(v, pid) for v in node[3]])
+  else:
+    for (t,n),v in zip(nodedata['in'], node[3]):
+      nodecomponent[n] = asrefmember(v, pid)
   if type(nodedata['out']) == list:
-    print([n for t,n in nodedata['out']])
+    #print([n for t,n in nodedata['out']])
     for (t,n),v in zip(nodedata['out'], node[5]):
       nodecomponent[n] = asid(v, pid)
   else:
@@ -394,6 +426,8 @@ def generate(s, pid):
     else:
       ret = None
     addlinearimpulses(code, ivarlist)
+    import pprint
+    pprint.pprint(code)
     code += datanodes # code is now a list of nodes with no nesting
     code = removejoins(code)
     fdef.pop(0) # remove the arguments (they're in the variable list now)
@@ -486,6 +520,8 @@ def generate(s, pid):
       if ivar in retsi:
         retcount += 1
     if argcount == 0:
+      if retcount != 0:
+        ivar[1] = None
       continue
     assert argcount == 1, 'an impulse can only be used once'
     ivars.append(ivar)
@@ -500,7 +536,7 @@ def generate(s, pid):
       if vvar in retsv:
         retcount += 1
     if retcount == 0:
-      assert argcount == 0, 'an undefined variable cannot be used'
+      assert argcount == 0, f'an undefined variable cannot be used: {vvar}'
       continue
     assert retcount == 1, 'a variable can only be defined once'
     vvars.append(vvar)
@@ -572,11 +608,10 @@ def generate(s, pid):
 
     ivids = itertools.count()
     vvids = itertools.count()
-    for var in varlist:
-      if var[2] == 'iname':
-        var[1] = next(ivids)
-      else:
-        var[1] = next(vvids)
+    for var in ivarlist:
+      var[1] = next(ivids)
+    for var in vvarlist:
+      var[1] = next(vvids)
 
     sortednodes = [finalcode[i] for i in sortednodes]
 
@@ -584,10 +619,7 @@ def generate(s, pid):
       if t[0] == 'name':
         return ' '.join(t[1])
       if t[0] == 'var':
-        if t[2] == 'iname':
-          return f'@i{t[1]}'
-        if t[2] == 'name':
-          return f'v{t[1]}'
+        return f'v{t[1]}'
       if t[0] == 'literal':
         if t[1] == 'string':
           return f'"{t[2]}"'
@@ -599,8 +631,8 @@ def generate(s, pid):
           return f'{t[2]}'
         if t[1] == 'bool':
           return 'true' if t[2] else 'false'
-        if t[1] == 'array':
-          return '[' + ', '.join(render(['literal', t[2], x]) for x in t[3]) + ']'
+        if t[1] == 'float3':
+          return '[' + ', '.join(render(['literal', 'float', x]) for x in t[2]) + ']'
         if t[1] == 'null':
           return 'null'
         if t[1] == 'float':
@@ -612,12 +644,39 @@ def generate(s, pid):
       name = render(name)
       if tag is not None:
         name += ' <' + render(tag) + '>'
-      args = [render(arg) for arg in argsi] + [render(arg) for arg in argsv]
-      rets = [render(ret) for ret in retsi] + [render(ret) for ret in retsv]
+      args = ['@' + render(arg) for arg in argsi] + [render(arg) for arg in argsv]
+      rets = ['@' + render(ret) for ret in retsi] + [render(ret) for ret in retsv]
       if len(rets) > 0:
         name = ','.join(rets) + ' = ' + name
       name += ' (' + ', '.join(args) + ')'
       print(name)
+
+  def sortnodes():
+    deps = {i:set() for i in range(len(finalcode))}
+
+    for ivar in ivars:
+      for x,_ in ivaruses[tuple(ivar)]:
+        deps[ivarlocs[tuple(ivar)]].add(x)
+
+    for vvar in vvars:
+      for x,_ in vvaruses[tuple(vvar)]:
+        deps[x].add(vvarlocs[tuple(vvar)])
+
+    nodes = {*deps.keys()}
+    sortednodes = []
+    levels = {}
+
+    for i in range(len(nodes)):
+      for name in nodes:
+        if all(dep not in nodes for dep in deps[name]):
+          sortednodes.append(name)
+          levels[name] = max([-1] + [levels[dep] for dep in deps[name]]) + 1
+          nodes.remove(name)
+          break
+      else:
+        assert False, 'recursive or undefined function detected, aborting'
+    
+    return sortednodes, levels
 
   types = {tuple(var):'$' for var in vvars}
 
@@ -625,13 +684,16 @@ def generate(s, pid):
     if v[0] == 'literal':
       if v[1] == 'rname':
         return '$' # nope not going to do this
-      if v[1] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode', 'int3', 'Slot', 'Tool']:
+      if v[1] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode', 'float3', 'Slot', 'Tool']:
         return {v[1]}
     return types[tuple(v)]
 
   for node in finalcode:
     #print('n', node)
-    intypes,outtypes = gettypes(pfnodes.getnode(node[0][1]), [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
+    if node[0][1] == ('Cast',):
+      intypes,outtypes = ['$'], [{node[1][1][0]}]
+    else:
+      intypes,outtypes = gettypes(pfnodes.getnode(node[0][1]), [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
     #print('t', intypes,outtypes)
     if set(['nope']) in intypes + outtypes or set() in intypes + outtypes:
       print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
@@ -712,14 +774,24 @@ def generate(s, pid):
       }]))
     else:
       assert False, f'error: type {ctype} not recognized as object, value, or reference type'
+    nodes[-1]['level'] = -1
+  
+  _,levels = sortnodes()
 
-  for node in finalcode:
+  for i,node in enumerate(finalcode):
     intypes = [typeof(v) for v in node[3]]
     outtypes = [typeof(v) for v in node[5]]
     nodes.append(generatenode(node, intypes, outtypes, pid))
+    nodes[-1]['level'] = levels[i]
+  
+  import collections
+  levelcounts = collections.defaultdict(int)
   
   for i,node in enumerate(nodes):
-    node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]
+    node['level']
+    levelcounts[node['level']] = levelcounts[node['level']] + 1
+    node['Position'] = [0.5 + node['level'] * 0.2, levelcounts[node['level']] * 0.2, 0]
+    #node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]
     print(node['Name'])
   
   return nodes

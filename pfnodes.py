@@ -109,7 +109,7 @@ nodes = {
   },
   ('Local', 'Transform'): {
     'in': [['Slot', 'Instance']],
-    'out': [['float3', 'Position'], ['floatq', 'Rotation'], ['float3', 'Scale']],
+    'out': [['float3', 'LocalPosition'], ['floatq', 'LocalRotation'], ['float3', 'LocalScale']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Transform.LocalTransform',
   },
   ('Min',): {
