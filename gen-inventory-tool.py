@@ -143,6 +143,8 @@ def processvalue1(v):
   # values are more flexible than objects and components
   # they don't always have an id key tbh
   if type(v) == dict:
+    if 'id' in v and 'ID' not in v:
+      v['ID'] = '###id###'
     out = {}
     for prop,value in v.items():
       if value == '###id###': # no sane person will put this as a string value right?
@@ -195,13 +197,31 @@ def processvalue2(v):
       return '@packdb:///' + assethashes[v[3:-3]]
   return v
 
+import pfmain
+
+def addprotoflux(o):
+  # adds protoflux children to any slot with a 'source' key
+  if 'source' in o:
+    with open(o['source']) as f:
+      s = f.read()
+    o['Children'] = pfmain.generate(s)
+    del o['source']
+  else:
+    if 'Children' in o:
+      for c in o['Children']:
+        addprotoflux(c)
+
 import json
 
 with open('inventory-tool-data.json', 'r') as f:
   tree = json.load(f)
 
+addprotoflux(tree['Object'])
+
 o = processobject1(tree['Object'])
 assets = [processasset1(a) for a in tree['Assets']]
+
+print(idmap)
 
 o = processobject2(o)
 assets = [processasset2(a) for a in assets]
