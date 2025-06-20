@@ -141,10 +141,7 @@
               {"Name": "Items",
                 "Tag": "RbCaViInventoryItems"
               },
-              {"Name": "Code",
-                "Children": [
-                ]
-              }
+              {"Name": "Code", "source": "k.pft"}
             ]
           },
           {"Name": "Item Slot", "id": "inventoryslot",
@@ -182,10 +179,7 @@
           }
         ]
       },
-      {"Name": "Code",
-        "Children": [
-        ]
-      }
+      {"Name": "Code", "source": "l.pft"}
     ]
   },
   "Assets": [
