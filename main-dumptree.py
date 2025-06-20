@@ -1,11 +1,11 @@
 # dump a .resonitepackage's main object to out/tree.json
 
 import json
+import sys
 
 import resonitepackage
 
-packagename = 'Redprint Manager 2.4.zip'
-packagename = 'out/inventory-tool.resonitepackage'
+packagename = sys.argv[1]
 
 package = resonitepackage.ResonitePackage(packagename)
 tree = package.getmainasset()
