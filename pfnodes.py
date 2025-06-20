@@ -23,6 +23,12 @@ nodes = {
       '$value': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueConditional',
     }
   },
+  ('Destroy', 'Slot'): {
+    'impulses': True, # a node with impulses: True must have named output arguments and an impulse out called Next
+    'in': [['Slot', 'Instance'], ['bool', 'PreserveAssets'], ['bool', 'SendDestroyingEvent']],
+    'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.DestroySlot',
+  },
   ('Div',): {
     'tag': 'type',
     'in': [['$', 'A'], ['$', 'B']],
@@ -97,7 +103,7 @@ nodes = {
     'tag': 'type',
     'in': [['$', 'A'], ['$', 'B']],
     'out': '$',
-    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMin',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Math.ValueMin',
   },
   ('Max',): {
     'forms': [ # max has multiple forms # so do mul and min, but i was lazy to do them
@@ -111,7 +117,7 @@ nodes = {
         'tag': 'type',
         'in': [['*$', 'Operands']], # * means list of inputs
         'out': '$',
-        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.ValueMaxMulti',
+        'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Math.ValueMaxMulti',
       },
     ],
   },
@@ -142,7 +148,7 @@ nodes = {
   ('NOT',): {
     'in': [['bool', 'A']],
     'out': 'bool',
-    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.NOT_bool',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.NOT_Bool',
   },
   ('Not', 'Null'): {
     'tag': 'type',
@@ -183,6 +189,13 @@ nodes = {
     'in': [['Slot', 'Instance'], ['Slot', 'NewParent'], ['bool', 'PreserveGlobalPosition']],
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SetParent',
+  },
+  ('Slot', 'Children', 'Events'): {
+    'tag': ['ref', 'Slot', 'Instance'], # type Slot, name Instance # will have a GlobalReference<Slot> component
+    'impulses': [None, ['OnChildAdded', 'OnChildRemoved']], # no branches connect to the next statement # also no impulse input
+    'in': [['User', 'OnUser']],
+    'out': [['Slot', 'Child']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SlotChildrenEvents',
   },
   ('Tool', 'Equipping', 'Side'): {
     'in': [['Tool', 'Tool']],
