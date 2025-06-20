@@ -315,16 +315,20 @@ def asmember(val):
     'Data': val,
   }
 
-def asid(val):
+def asrefmember(val, pid):
+  return asmember('###' + repr((pid, tuple(val))) + '###')
+  
+
+def asid(val, pid):
   return {
-    'id': val,
+    'id': repr((pid, tuple(val))),
     'Data': None,
   }
 
 def fromcomponents(name, cs):
   return {'Name': name, 'Components': cs}
 
-def generatenode(node, intypes, outtypes):
+def generatenode(node, intypes, outtypes, pid):
   nodedata = pfnodes.getnode(node[0][1])
   nodedata,generictype = choosenode(nodedata, intypes, outtypes)
   nodecomponent = {}
@@ -350,16 +354,16 @@ def generatenode(node, intypes, outtypes):
   if 'impulsein' in nodedata:
     print([n for n,c in nodedata['impulseout']])
   for (t,n),v in zip(nodedata['in'], node[3]):
-    nodecomponent[n] = asmember('###' + repr(tuple(v)) + '###')
+    nodecomponent[n] = asrefmember(v, pid)
   if type(nodedata['out']) == list:
     print([n for t,n in nodedata['out']])
     for (t,n),v in zip(nodedata['out'], node[5]):
-      nodecomponent[n] = asid(repr(tuple(v)))
+      nodecomponent[n] = asid(v, pid)
   else:
-    nodecomponent['id'] = repr(tuple(node[5][0]))
+    nodecomponent['id'] = asid(node[5][0], pid)['id']
   return fromcomponents(re.sub('(^|<)[^<>,]*\\.', '\\1', nodeclass), [nodecomponent])
 
-def generate(s):
+def generate(s, pid):
   code = pft.parse(s)
 
   funcdefs = stripfunctions(code)
@@ -671,12 +675,12 @@ def generate(s):
       nodes.append(fromcomponents(ctype + ' input', [
         {
           'type': '[ProtoFluxBindings]FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.SlotSource',
-          'id': repr(c),
-          'Source': asmember('###' + repr((ctype, cval, 'source')) + '###'),
+          'id': asid(c, pid)['id'],
+          'Source': asrefmember((ctype, cval, 'source'), pid),
         },
         {
           'type': '[FrooxEngine]FrooxEngine.ProtoFlux.GlobalReference<' + typename(ctype) + '>',
-          'id': repr((ctype, cval, 'source')),
+          'id': asid((ctype, cval, 'source'), pid)['id'],
           'Reference': asmember('###' + cval[0] + '###'),
         },
       ]))
@@ -685,25 +689,25 @@ def generate(s):
       nodes.append(fromcomponents(ctype + ' input', [
         {
           'type': '[ProtoFluxBindings]FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ElementSource<' + typename(ctype) + '>',
-          'id': repr(c),
-          'Source': asmember('###' + repr((ctype, cval, 'source')) + '###'),
+          'id': asid(c, pid)['id'],
+          'Source': asrefmember((ctype, cval, 'source'), pid),
         },
         {
           'type': '[FrooxEngine]FrooxEngine.ProtoFlux.GlobalReference<' + typename(ctype) + '>',
-          'id': repr((ctype, cval, 'source')),
+          'id': asid((ctype, cval, 'source'), pid)['id'],
           'Reference': asmember('###' + cval[0] + '###'),
         },
       ]))
     elif ctype in valuetypes:
       nodes.append(fromcomponents(ctype + ' input', [{
         'type': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueInput<' + typename(ctype) + '>',
-        'id': repr(c),
+        'id': asid(c, pid)['id'],
         'Value': asmember(cval),
       }]))
     elif ctype in objecttypes:
       nodes.append(fromcomponents(ctype + ' input', [{
         'type': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ValueObjectInput<' + typename(ctype) + '>',
-        'id': repr(c),
+        'id': asid(c, pid)['id'],
         'Value': asmember(cval),
       }]))
     else:
@@ -712,7 +716,7 @@ def generate(s):
   for node in finalcode:
     intypes = [typeof(v) for v in node[3]]
     outtypes = [typeof(v) for v in node[5]]
-    nodes.append(generatenode(node, intypes, outtypes))
+    nodes.append(generatenode(node, intypes, outtypes, pid))
   
   for i,node in enumerate(nodes):
     node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]

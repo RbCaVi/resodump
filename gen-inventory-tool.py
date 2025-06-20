@@ -199,12 +199,14 @@ def processvalue2(v):
 
 import pfmain
 
+fluxids = itertools.count()
 def addprotoflux(o):
   # adds protoflux children to any slot with a 'source' key
   if 'source' in o:
     with open(o['source']) as f:
       s = f.read()
-    o['Children'] = pfmain.generate(s)
+    o['Children'] = pfmain.generate(s, next(fluxids))
+    print(o['Children'])
     del o['source']
   else:
     if 'Children' in o:
