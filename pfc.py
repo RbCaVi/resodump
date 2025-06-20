@@ -41,13 +41,15 @@ constanttypes = {
 }
 
 def resolvevar(var, vars_, vpath):
-  if var[0] != 'name':
+  if var[0] not in ['iname', 'name']:
     return var
   paths = sorted(filter(lambda p: inscope(vpath, p), vars_.keys()), reverse = True)
   for path in paths:
     for varname,varid in vars_[path]:
       if varname == var:
         return varid
+  if var[0] != 'name':
+    return var
   name = ' '.join(var[1])
   if name.lower() == 'true':
     return ('literal', 'bool', True)
