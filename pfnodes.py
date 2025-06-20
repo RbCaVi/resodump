@@ -41,11 +41,24 @@ nodes = {
     'out': [['Slot', 'Duplicate']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.DuplicateSlot',
   },
+  ('Dynamic', 'Impulse', 'Reciever'): {
+    'tag': ['string', 'Tag'],
+    'impulses': [None, ['OnTriggered']],
+    'in': [],
+    'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Actions.DynamicImpulseReceiver',
+  },
   ('Dynamic', 'Impulse', 'Trigger'): {
     'impulses': True,
     'in': [['string', 'Tag'], ['Slot', 'TargetHierarchy'], ['bool', 'ExcludeDisabled']],
-    'out': 'int',
+    'out': [['int', 'TriggeredCount']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Actions.DynamicImpulseTrigger',
+  },
+  ('Dynamic', 'Variable', 'Input'): {
+    'tag': ['string', 'VariableName'],
+    'in': [],
+    'out': [['$', 'Value'], ['bool', 'HasValue']],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Actions.DynamicVariableInput',
   },
   ('Find', 'Child', 'By', 'Name'): {
     'in': [['Slot', 'Instance'], ['string', 'Name'], ['bool', 'MatchSubstring'], ['bool', 'IgnoreCase'], ['int', 'SearchDepth']],
@@ -60,7 +73,7 @@ nodes = {
   ('For',): {
     'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration', 'LoopEnd']], # LoopEnd connects to the next statement
     'in': [['int', 'Count'], ['bool', 'Reverse']],
-    'out': [['int', 'iteration']],
+    'out': [['int', 'Iteration']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.For',
   },
   ('Get', 'Active', 'User', 'Self'): {
@@ -156,8 +169,13 @@ nodes = {
     'out': 'bool',
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.NotNull',
   },
+  ('Pack', 'xyz'): {
+    'in': [['float', 'X'], ['float', 'Y'], ['float', 'Z']],
+    'out': 'float3',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.Pack_Float3',
+  },
   ('RawDataTool', 'Events'): {
-    'tag': ['ref', 'RawDataTool', 'Tool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
+    'tag': ['Tool', 'RawDataTool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
     'impulses': [None, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement # also no impulse input
     'in': [],
     'out': [],
@@ -189,6 +207,12 @@ nodes = {
     'in': [['Slot', 'Instance'], ['Slot', 'NewParent'], ['bool', 'PreserveGlobalPosition']],
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SetParent',
+  },
+  ('Set', 'Slot', 'Active', 'Self'): {
+    'impulses': True,
+    'in': [['Slot', 'Instance'], ['bool', 'Active']],
+    'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SetSlotActiveSelf',
   },
   ('Slot', 'Children', 'Events'): {
     'tag': ['ref', 'Slot', 'Instance'], # type Slot, name Instance # will have a GlobalReference<Slot> component
@@ -229,15 +253,25 @@ nodes = {
   # because they have varying numbers of impulse inputs/outputs
   ('Impulse', 'Multiplexer'): {
     'impulses': 'builtin',
+    'impulsein': True,
+    'impulseout': [], # has a list of impulses
     'in': [['int', 'Index']],
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ImpulseMultiplexer',
   },
   ('Impulse', 'Demultiplexer'): {
     'impulses': 'builtin',
+    'impulsein': False, # has a list of impulses
+    'impulseout': [['OnTriggered', True]],
     'in': [],
     'out': [['int', 'Index']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ImpulseDemultiplexer',
+  },
+  ('Cast',): {
+    'impulses': 'builtin',
+    'in': [['_', 'Input']],
+    'out': '_',
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Casts.',
   },
   ('Join',): {
     'impulses': 'builtin', # join two impulses into one - like impulse demultiplexer with no index
