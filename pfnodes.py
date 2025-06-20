@@ -53,7 +53,7 @@ nodes = {
   },
   ('For',): {
     'impulses': ['LoopEnd', ['LoopStart', 'LoopIteration', 'LoopEnd']], # LoopEnd connects to the next statement
-    'in': [['int', 'Count'], ['bool', 'Reverse ']],
+    'in': [['int', 'Count'], ['bool', 'Reverse']],
     'out': [['int', 'iteration']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.For',
   },
@@ -190,8 +190,8 @@ nodes = {
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction.Tools.ToolEquippingSide',
   },
   ('Unpack', 'xyz'): {
-    'in': [['float3', '']],
-    'out': [['float', ''], ['float', ''], ['float', '']],
+    'in': [['float3', 'V']],
+    'out': [['float', 'X'], ['float', 'Y'], ['float', 'Z']],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.Unpack_Float3',
   },
   ('User', 'Root', 'Slot'): {

@@ -54,7 +54,7 @@ def resolvevar(var, vars_, vpath):
   if name.lower() == 'false':
     return ('literal', 'bool', False)
   if name.lower() == 'null':
-    return ('literal', 'null', None)
+    return ['literal', 'null', None] # not a tuple - this type is not final
   if name in constanttypes:
     return ('literal', constanttypes[name], name)
   assert False, f'{var}, {vpath}, {paths}, {[vars_[path] for path in paths]}'

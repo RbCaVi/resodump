@@ -114,7 +114,9 @@ def pass1(tokens):
           ctype = 'float'
         else:
           ctype = 'int'
-        token = ('literal', 'array', ctype, tuple(v for t,v in components))
+        assert len(components) in [2, 3, 4], f'error: array of disallowed length: {components}'
+        ctype += str(len(components))
+        token = ('literal', ctype, tuple(v for t,v in components))
       else:
         assert False, f'error: [ before non name or number: {token}'
     elif token[0] == ']':
@@ -146,8 +148,10 @@ def pass1(tokens):
         assert token not in names, f'error: duplicate variable: {token}'
         names.insert(0, token)
       token = ('assign', tuple(names))
-    if token[0] in ['float', 'int', 'string', 'rname']:
+    if token[0] in ['float', 'int', 'string']:
       token = ('literal', token[0], token[1])
+    if token[0] == 'rname':
+      token = ['literal', token[0], token[1]]
     out.append(token)
   return out
 
@@ -238,7 +242,7 @@ def filter2(f, l):
       l1.append(x)
     else:
       l2.append(x)
-  return tuple(l1), tuple(l2)
+  return l1, l2
 
 def reformatstmt(stmt):
   # reformat the statement
