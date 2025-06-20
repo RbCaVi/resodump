@@ -109,7 +109,7 @@ def flattenbranches(code, ivarlist):
     for substmt in code:
       newcode.append(substmt)
       if substmt[0][0] == 'name' and substmt[0][1] != ('Impulse', 'Demultiplexer') and substmt[0][1] != ('Join',) and not pfnodes.getnode(substmt[0][1])['linear']:
-        print(substmt)
+        #print(substmt)
         # may have multiple outputs
         # and will either have subblocks or explicit continuations
         if len(substmt[4]) != 0:
@@ -138,12 +138,13 @@ def flattenbranches(code, ivarlist):
           newcode += block
         substmt[4] = invars
         if len(outvars) > 0:
-          newcode.append([['name', ('Join',)], None, [outvars], [], [], []])
+          newcode.append([['name', ('Join',)], None, outvars, [], [], []])
       substmt[6:] = []
     return newcode
   return f(code)
 
 def renameimpulse(code, pat, repl):
+  #print('rename impulse', pat, repl)
   for stmt in code:
     stmt[2] = [repl if v == pat else v for v in stmt[2]]
     stmt[4] = [repl if v == pat else v for v in stmt[4]]
@@ -426,8 +427,8 @@ def generate(s, pid):
     else:
       ret = None
     addlinearimpulses(code, ivarlist)
-    import pprint
-    pprint.pprint(code)
+    #import pprint
+    #pprint.pprint(code)
     code += datanodes # code is now a list of nodes with no nesting
     code = removejoins(code)
     fdef.pop(0) # remove the arguments (they're in the variable list now)
@@ -583,7 +584,7 @@ def generate(s, pid):
       for rv in retsv:
         print(f'{n}>{rv}')
 
-  if False: # toposort nodes and print out code (but joined impulses aren't handled...)
+  def printcode(): # toposort nodes and print out code (but joined impulses aren't handled...)
     deps = {i:set() for i in range(len(finalcode))}
 
     for ivar in ivars:
@@ -606,12 +607,12 @@ def generate(s, pid):
       else:
         assert False, 'recursive or undefined function detected, aborting'
 
-    ivids = itertools.count()
-    vvids = itertools.count()
-    for var in ivarlist:
-      var[1] = next(ivids)
-    for var in vvarlist:
-      var[1] = next(vvids)
+    #ivids = itertools.count()
+    #vvids = itertools.count()
+    #for var in ivarlist:
+    #  var[1] = next(ivids)
+    #for var in vvarlist:
+    #  var[1] = next(vvids)
 
     sortednodes = [finalcode[i] for i in sortednodes]
 
@@ -644,12 +645,16 @@ def generate(s, pid):
       name = render(name)
       if tag is not None:
         name += ' <' + render(tag) + '>'
-      args = ['@' + render(arg) for arg in argsi] + [render(arg) for arg in argsv]
-      rets = ['@' + render(ret) for ret in retsi] + [render(ret) for ret in retsv]
+      args = ['@i' + render(arg)[1:] for arg in argsi] + [render(arg) for arg in argsv]
+      rets = ['@i' + render(ret)[1:] for ret in retsi] + [render(ret) for ret in retsv]
       if len(rets) > 0:
         name = ','.join(rets) + ' = ' + name
       name += ' (' + ', '.join(args) + ')'
       print(name)
+  
+  #printcode()
+  #print(ivarlist)
+  #print(vvarlist)
 
   def sortnodes():
     deps = {i:set() for i in range(len(finalcode))}
@@ -724,14 +729,14 @@ def generate(s, pid):
       if arg[0] == 'var':
         continue
       constants.add(tuple(arg))
-      print(arg)
+      #print(arg)
 
   # the final node data
   nodes = []
 
   for c in constants:
     _,ctype,cval = c
-    print(ctype, cval)
+    #print(ctype, cval)
     if ctype == 'Slot':
       assert len(cval) == 1, 'reference names must not include whitespace'
       nodes.append(fromcomponents(ctype + ' input', [
@@ -792,7 +797,7 @@ def generate(s, pid):
     levelcounts[node['level']] = levelcounts[node['level']] + 1
     node['Position'] = [0.5 + node['level'] * 0.2, levelcounts[node['level']] * 0.2, 0]
     #node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]
-    print(node['Name'])
+    #print(node['Name'])
   
   return nodes
 

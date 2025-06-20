@@ -208,7 +208,7 @@ def addprotoflux(o):
     with open(o['source']) as f:
       s = f.read()
     o['Children'] = pfmain.generate(s, next(fluxids))
-    pprint.pprint(o['Children'])
+    #pprint.pprint(o['Children'])
     del o['source']
   else:
     if 'Children' in o:
@@ -225,7 +225,7 @@ addprotoflux(tree['Object'])
 o = processobject1(tree['Object'])
 assets = [processasset1(a) for a in tree['Assets']]
 
-print(idmap)
+#print(idmap)
 
 o = processobject2(o)
 assets = [processasset2(a) for a in assets]
