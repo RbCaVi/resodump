@@ -1,12 +1,12 @@
 {
-  "Object": {"Name": "Inventory Tool", "id": "tool",
+  "Object": {"Name": "Inventory Tool",
     "Components": [
-      {"type": "[FrooxEngine]FrooxEngine.RawDataTool",
+      {"type": "[FrooxEngine]FrooxEngine.RawDataTool", "id": "tool",
         "_equipLink": null,
         "TipReference": null,
         "BlockGripEquip": false,
         "BlockRemoteEquip": false,
-        "EquipName": "Tool",
+        "EquipName": "Inventory Tool",
         "_overrideActiveTool": null,
         "_gripPosesGenerated": true,
         "LocalTipOffset": [0, 0, 0],
