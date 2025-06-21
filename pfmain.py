@@ -259,8 +259,8 @@ def gettypes(nodedata, intypes, outtypes):
 # not final
 valuetypes = ['bool', 'float', 'int', 'BodyNode', 'float3']
 objecttypes = ['string']
-reftypes = ['Slot', 'Tool']
-elementtypes = ['Tool']
+reftypes = ['Slot', 'Tool', 'RawDataTool']
+elementtypes = ['Tool', 'RawDataTool']
 
 # now for generation (?)
 # casts might be an issue...
@@ -310,6 +310,7 @@ def typename(t):
     'Slot': '[FrooxEngine]FrooxEngine.Slot',
     'BodyNode': '[FrooxEngine]FrooxEngine.BodyNode',
     'Tool': '[FrooxEngine]FrooxEngine.ITool', # i don't think this was a good idea
+    'RawDataTool': '[FrooxEngine]FrooxEngine.RawDataTool',
   }[t]
 
 def asmember(val):
@@ -394,7 +395,28 @@ def generatenode(node, intypes, outtypes, pid):
       nodecomponent[n] = asid(v, pid)
   else:
     nodecomponent['id'] = asid(node[5][0], pid)['id']
-  return fromcomponents(re.sub('(^|<)[^<>,]*\\.', '\\1', nodeclass), [nodecomponent])
+  nodecomponents = [nodecomponent]
+  # reference or value :)
+  if 'tag' in nodedata and nodedata['tag'] != 'type':
+    print('reference', nodedata['tag'], node[1])
+    rtype,rname = nodedata['tag']
+    if rtype == 'string':
+      nodecomponents.append({
+        'type': '[FrooxEngine]FrooxEngine.ProtoFlux.GlobalValue<' + typename(rtype) + '>',
+        'id': asid((node, 'source'), pid)['id'],
+        'Reference': asmember(node[1][1][0]),
+      })
+      nodecomponent[rname] = asrefmember((node, 'source'), pid)
+    elif rtype in elementtypes + ['Slot']:
+      nodecomponents.append({
+        'type': '[FrooxEngine]FrooxEngine.ProtoFlux.GlobalReference<' + typename(rtype) + '>',
+        'id': asid((node, 'source'), pid)['id'],
+        'Reference': asmember('###' + node[1][1][0] + '###'),
+      })
+      nodecomponent[rname] = asrefmember((node, 'source'), pid)
+    else:
+      assert False, f'weezer buddy holly: {rtype}'
+  return fromcomponents(re.sub('(^|<)[^<>,]*\\.', '\\1', nodeclass), nodecomponents)
 
 def generate(s, pid):
   code = pft.parse(s)
@@ -793,7 +815,6 @@ def generate(s, pid):
   levelcounts = collections.defaultdict(int)
   
   for i,node in enumerate(nodes):
-    node['level']
     levelcounts[node['level']] = levelcounts[node['level']] + 1
     node['Position'] = [0.5 + node['level'] * 0.2, levelcounts[node['level']] * 0.2, 0]
     #node['Position'] = [0.5 + (i // 10) * 0.2, (i % 10) * 0.2, 0]

@@ -175,7 +175,7 @@ nodes = {
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators.Pack_Float3',
   },
   ('RawDataTool', 'Events'): {
-    'tag': ['Tool', 'RawDataTool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
+    'tag': ['RawDataTool', 'Tool'], # type RawDataTool, name Tool # will have a GlobalReference<RawDataTool> component
     'impulses': [None, ['Equipped', 'Dequipped', 'ToolUpdate', 'PrimaryPressed', 'PrimaryHeld', 'PrimaryReleased', 'SecondaryPressed', 'SecondaryHeld', 'SecondaryReleased']], # no branches connect to the next statement # also no impulse input
     'in': [],
     'out': [],
@@ -215,7 +215,7 @@ nodes = {
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots.SetSlotActiveSelf',
   },
   ('Slot', 'Children', 'Events'): {
-    'tag': ['ref', 'Slot', 'Instance'], # type Slot, name Instance # will have a GlobalReference<Slot> component
+    'tag': ['Slot', 'Instance'], # type Slot, name Instance # will have a GlobalReference<Slot> component
     'impulses': [None, ['OnChildAdded', 'OnChildRemoved']], # no branches connect to the next statement # also no impulse input
     'in': [['User', 'OnUser']],
     'out': [['Slot', 'Child']],
