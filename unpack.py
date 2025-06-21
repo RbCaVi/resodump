@@ -29,3 +29,39 @@ def unpack7bit(data):
   data = data[1:]
   shift += 7
   return n, data
+
+class DataSlice:
+  # a slice of bytes
+  # represented as a buffer and an offset
+  
+  def __init__(self, buf):
+    self.buf = buf
+    self.offset = 0
+  
+  def unpackbytes(self, n):
+    # take n bytes
+    data = self.buf[self.offset:self.offset + n]
+    self.offset += n
+    return data
+  
+  def unpackstruct(self, fmt):
+    # decode a chunk using the struct package
+    return struct.unpack(fmt, self.unpackbytes(struct.calcsize(fmt)))
+  
+  def getbyte(self):
+    return self.unpackbytes(1)[0]
+  
+  def unpack7bit(self):
+    # 7bit encoding
+    # returns an integer
+    # each byte contributes 7 bits
+    # and the high bit marks continuation
+    # the first byte is the least significant
+    n = 0
+    shift = 0
+    b = 128 # so the loop goes at least one iteration
+    while b & 128:
+      b = self.getbyte()
+      n += (b & 127) << shift
+      shift += 7
+    return n
