@@ -76,10 +76,10 @@ import unpack
 import lz4
 
 def unpackheader(data):
-  (magic,version,flags),data = unpack.unpackstruct('<6sii', data)
-  vertexcount,data = unpack.unpack7bit(data)
-  meshsize,data = unpack.unpack7bit(data)
-  bonecount,data = unpack.unpack7bit(data)
+  magic,version,flags = unpack.unpackstruct('<6sii', data)
+  vertexcount = unpack.unpack7bit(data)
+  meshsize = unpack.unpack7bit(data)
+  bonecount = unpack.unpack7bit(data)
   assert magic == b'\x05MeshX', 'no header, try decompressing with LZ4 :)'
   assert version <= 7, 'version too high :('
   out = {
@@ -97,14 +97,14 @@ def unpackheader(data):
   else:
     out['tricount'] = meshsize
   if version >= 4:
-    blendshapecount,data = unpack.unpack7bit(data)
+    blendshapecount = unpack.unpack7bit(data)
     out['blendshapecount'] = blendshapecount
   if version >= 1 and version < 3:
-    modelcount,data = unpack.unpack7bit(data)
+    modelcount = unpack.unpack7bit(data)
     out['modelcount'] = modelcount
   if version >= 6:
-    uvcount,data = unpack.unpack7bit(data)
-    uvdims,data = unpack.unpackbytes(uvcount, data)
+    uvcount = unpack.unpack7bit(data)
+    uvdims = unpack.unpackbytes(uvcount, data)
     out['uvdims'] = uvdims
   else:
     uvis = [i for i,f in enumerate([flags & 16, flags & 32, flags & 64, flags & 128]) if f]
@@ -113,7 +113,7 @@ def unpackheader(data):
   if version > 6:
     # read a string or something to an enum
     # Linear, sRGB, sRGBAlpha
-    colorprofile,data = unpackstring(data)
+    colorprofile = unpackstring(data)
     assert colorprofile in [b'Linear', b'sRGB', b'sRGBAlpha'], 'unrecognized color profile: ' + colorprofile
     out['colorprofile'] = colorprofile
   else:
@@ -122,7 +122,7 @@ def unpackheader(data):
   if version >= 2:
     # technically 7bit encoded, but there are only three values
     # Plain (0), LZ4 (1), LZMA (2)
-    (compression,),data = unpack.unpackstruct('<b', data)
+    compression, = unpack.unpackstruct('<b', data)
     out['compression'] = compression
     if compression == 0:
       # no compression
@@ -133,7 +133,7 @@ def unpackheader(data):
       # i don't have to do this rn
       assert False, 'lzma compression not supported yet - RbCaVi ;)'
   
-  return out, data
+  return out
 
 def unpackfloat2(data):
   return unpack.unpackstruct('<ff', data)
@@ -151,25 +151,25 @@ def unpackint3(data):
   return unpack.unpackstruct('<iii', data)
 
 def unpackint(data):
-  (i,),data = unpack.unpackstruct('<i', data)
-  return i, data
+  i, = unpack.unpackstruct('<i', data)
+  return i
 
 def unpackbonebinding(data):
-  i1,data = unpack.unpack7bit(data)
-  i2,data = unpack.unpack7bit(data)
-  i3,data = unpack.unpack7bit(data)
-  i4,data = unpack.unpack7bit(data)
-  weights,data = unpack.unpackstruct('<ffff', data)
+  i1 = unpack.unpack7bit(data)
+  i2 = unpack.unpack7bit(data)
+  i3 = unpack.unpack7bit(data)
+  i4 = unpack.unpack7bit(data)
+  weights = unpack.unpackstruct('<ffff', data)
   return ((i1, i2, i3, i4), weights), data
 
 def unpackstring(data):
-  length,data = unpack.unpack7bit(data)
+  length = unpack.unpack7bit(data)
   return unpack.unpackbytes(length, data)
 
 def unpackarray(unpackx, count, data):
   xs = []
   for i in range(count):
-    x,data = unpackx(data)
+    x = unpackx(data)
     xs.append(x)
   return xs, data
 
@@ -180,7 +180,8 @@ def normalizebonebinding(b):
   return idxs, weights
 
 def read(data):
-  header,data = unpackheader(data)
+  data = unpack.DataSlice(data)
+  header = unpackheader(data)
   version = header['version']
   vertcount = header['vertexcount']
   
@@ -191,23 +192,23 @@ def read(data):
 
   out = {}
 
-  vertices,data = unpackarray(unpackfloat3, vertcount, data)
+  vertices = unpackarray(unpackfloat3, vertcount, data)
   out['vertices'] = vertices
 
   if header['hasnormals']:
-    normals,data = unpackarray(unpackfloat3, vertcount, data)
+    normals = unpackarray(unpackfloat3, vertcount, data)
     out['normals'] = normals
 
   if header['hastangents']:
-    tangents,data = unpackarray(unpackfloat4, vertcount, data)
+    tangents = unpackarray(unpackfloat4, vertcount, data)
     out['tangents'] = tangents
 
   if header['hascolors']:
-    colors,data = unpackarray(unpackcolor, vertcount, data)
+    colors = unpackarray(unpackcolor, vertcount, data)
     out['colors'] = colors
 
   if header['hasbonebindings']:
-    bonebindings,data = unpackarray(unpackbonebinding, vertcount, data)
+    bonebindings = unpackarray(unpackbonebinding, vertcount, data)
     if version < 5:
       bonebindings = [normalizebonebinding(b) for b in bonebindings]
     out['bonebindings'] = bonebindings
@@ -215,13 +216,13 @@ def read(data):
   uvs = []
   for dim in header['uvdims']:
     if dim == 2:
-      uv,data = unpackarray(unpackfloat2, vertcount, data)
+      uv = unpackarray(unpackfloat2, vertcount, data)
       uvs.append(uv)
     elif dim == 3:
-      uv,data = unpackarray(unpackfloat3, vertcount, data)
+      uv = unpackarray(unpackfloat3, vertcount, data)
       uvs.append(uv)
     elif dim == 4:
-      uv,data = unpackarray(unpackfloat4, vertcount, data)
+      uv = unpackarray(unpackfloat4, vertcount, data)
       uvs.append(uv)
     else:
       print('weird uv dimension:', dim)
@@ -230,23 +231,23 @@ def read(data):
   meshes = []
   if version >= 3:
     for i in range(header['meshcount']):
-      meshtype,data = unpackstring(data)
+      meshtype = unpackstring(data)
       if meshtype == b'':
         continue
       assert meshtype in [b'Points', b'Triangles'], 'unknown mesh type: ' + str(meshtype)
-      primcount,data = unpack.unpack7bit(data)
+      primcount = unpack.unpack7bit(data)
       if meshtype == b'Triangles':
-        tris,data = unpackarray(unpackint3, primcount, data)
+        tris = unpackarray(unpackint3, primcount, data)
         meshes.append(tris)
       elif meshtype == b'Points':
-        points,data = unpackarray(unpackint, primcount, data)
+        points = unpackarray(unpackint, primcount, data)
         meshes.append(points)
   elif header['modelcount'] == 1: # version == 0?
-    tris,data = unpackarray(unpackint3, header['tricount'], data)
+    tris = unpackarray(unpackint3, header['tricount'], data)
     meshes.append(tris)
   else:
-    tris,data = unpackarray(unpackint3, header['tricount'], data)
-    trimeshes,data = unpackarray(unpackint, header['tricount'], data)
+    tris = unpackarray(unpackint3, header['tricount'], data)
+    trimeshes = unpackarray(unpackint, header['tricount'], data)
     meshes = [[] for _ in range(header['modelcount'])]
     for tri,meshidx in zip(tris, trimeshes):
       meshes[meshidx].append(tri)
@@ -254,8 +255,8 @@ def read(data):
 
   bones = []
   for i in range(header['bonecount']):
-    name,data = unpackstring(data)
-    bindpose,data = unpackarray(unpackfloat4, 4, data)
+    name = unpackstring(data)
+    bindpose = unpackarray(unpackfloat4, 4, data)
     bones.append({
       'name': name,
       'bindpose': tuple(bindpose),
@@ -264,32 +265,32 @@ def read(data):
 
   blendshapes = {}
   for i in range(header['blendshapecount']):
-    name,data = unpackstring(data)
+    name = unpackstring(data)
     assert name not in blendshapes, 'duplicate blendshape :('
     blendshape = []
-    flags,data = unpack.unpack7bit(data)
+    flags = unpack.unpack7bit(data)
     hasnormals = bool(flags & 1)
     hastangents = bool(flags & 2)
-    framecount,data = unpack.unpack7bit(data)
+    framecount = unpack.unpack7bit(data)
     for i in range(framecount):
       frame = {}
       # is this weight? maybe some kind of time? idk i just read the code
       # i know normalizeframeweights() sets them to an equally spaced range
-      (weight,),data = unpack.unpackstruct('<f', data)
+      (weight,) = unpack.unpackstruct('<f', data)
       frame['weight'] = weight
-      vertices,data = unpackarray(unpackfloat3, vertcount, data)
+      vertices = unpackarray(unpackfloat3, vertcount, data)
       frame['vertices'] = vertices
       if hasnormals:
-        normals,data = unpackarray(unpackfloat3, vertcount, data)
+        normals = unpackarray(unpackfloat3, vertcount, data)
         frame['normals'] = normals
       if hastangents:
-        tangents,data = unpackarray(unpackfloat3, vertcount, data)
+        tangents = unpackarray(unpackfloat3, vertcount, data)
         frame['tangents'] = tangents
       blendshape.append(frame)
     blendshapes[name.decode('utf-8')] = blendshape
   out['blendshapes'] = blendshapes
 
-  assert len(data) == 0, 'file had extra data at the end'
+  assert len(data.data) == data.offset, 'file had extra data at the end'
 
   return out
 
