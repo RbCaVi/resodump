@@ -39,7 +39,8 @@ class DataSlice:
     self.offset = 0
   
   def unpackbytes(self, n):
-    # take n bytes
+    # returns the first n bytes
+    # and advances the offset
     data = self.buf[self.offset:self.offset + n]
     self.offset += n
     return data
@@ -48,7 +49,8 @@ class DataSlice:
     # decode a chunk using the struct package
     return struct.unpack(fmt, self.unpackbytes(struct.calcsize(fmt)))
   
-  def getbyte(self):
+  def unpackbyte(self):
+    # returns the first byte as an integer
     return self.unpackbytes(1)[0]
   
   def unpack7bit(self):
@@ -61,7 +63,11 @@ class DataSlice:
     shift = 0
     b = 128 # so the loop goes at least one iteration
     while b & 128:
-      b = self.getbyte()
+      b = self.unpackbyte()
       n += (b & 127) << shift
       shift += 7
     return n
+
+  def unpackrest(self):
+    # returns the rest of the buffer that's not consumed
+    return self.unpackbytes(len(self.data) - self.offset)
