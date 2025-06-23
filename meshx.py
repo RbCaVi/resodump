@@ -72,15 +72,6 @@
 
 import struct
 import io
-import time
-
-times = {}
-
-def starttime(tid):
-  times[tid] = time.time()
-
-def endtime(tid):
-  print(f'{tid}: {time.time() - times[tid]} seconds')
 
 import unpack
 import lz4
@@ -136,12 +127,7 @@ def unpackheader(data):
       # no compression
       pass
     if compression == 1:
-      import cProfile
-      import copy
-      #cProfile.runctx("lz4.lz4decompress(copy.copy(data))", globals(), locals())
-      starttime('dec')
       data = lz4.lz4decompress(data)
-      endtime('dec')
     if compression == 2:
       # i don't have to do this rn
       assert False, 'lzma compression not supported yet - RbCaVi ;)'
