@@ -140,7 +140,7 @@ def unpackheader(data):
       import copy
       #cProfile.runctx("lz4.lz4decompress(copy.copy(data))", globals(), locals())
       starttime('dec')
-      data = io.BytesIO(lz4.lz4decompress(data))
+      data = lz4.lz4decompress(data)
       endtime('dec')
     if compression == 2:
       # i don't have to do this rn
