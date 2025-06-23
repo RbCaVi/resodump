@@ -3,12 +3,14 @@
 
 import os
 import json
+import sys
 
 import resonitepackage
 import meshx
 
-packagename = 'Redprint Manager 2.4.zip'
-packagename = 'out/inventory-tool.resonitepackage'
+#packagename = 'Redprint Manager 2.4.zip'
+#packagename = 'out/inventory-tool.resonitepackage'
+packagename = sys.argv[1]
 
 with resonitepackage.ResonitePackage(packagename) as package:
   for assethash in package.assetlist():

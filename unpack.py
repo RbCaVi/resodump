@@ -3,15 +3,20 @@
 # i call these "unpack" because they unpack a piece of data from the start of a stream
 
 import struct
+import os
 
 def unpackstruct(fmt, data):
   # decodes a chunk using the struct package
   size = struct.calcsize(fmt)
-  return struct.unpack(fmt, data[:size]), data[size:]
+  return struct.unpack(fmt, unpackbytes(size, data))
 
 def unpackbytes(n, data):
   # take n bytes
-  return data[:n], data[n:]
+  return data.read(n)
+
+def unpackbyte(data):
+  # take n bytes
+  return data.read(1)[0]
 
 def unpack7bit(data):
   # 7bit encoding
@@ -21,14 +26,19 @@ def unpack7bit(data):
   # the first byte is the least significant
   n = 0
   shift = 0
-  while data[0] & 128:
-    n += (data[0] & 127) << shift
-    data = data[1:]
+  b = 128 # so the loop goes at least one iteration
+  while b & 128:
+    b = unpackbyte(data)
+    n += (b & 127) << shift
     shift += 7
-  n += (data[0] & 127) << shift
-  data = data[1:]
-  shift += 7
-  return n, data
+  return n
+
+def isempty(data):
+  # assuming data is a seekable file like object
+  empty = len(unpackbytes(1, data)) == 0
+  if not empty:
+    data.seek(-1, os.SEEK_CUR)
+  return empty
 
 class DataSlice:
   # a slice of bytes

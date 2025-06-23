@@ -71,6 +71,16 @@
 #       vertices, normals, tangents - same as top level
 
 import struct
+import io
+import time
+
+times = {}
+
+def starttime(tid):
+  times[tid] = time.time()
+
+def endtime(tid):
+  print(f'{tid}: {time.time() - times[tid]} seconds')
 
 import unpack
 import lz4
@@ -97,11 +107,9 @@ def unpackheader(data):
   else:
     out['tricount'] = meshsize
   if version >= 4:
-    blendshapecount = unpack.unpack7bit(data)
-    out['blendshapecount'] = blendshapecount
+    out['blendshapecount'] = unpack.unpack7bit(data)
   if version >= 1 and version < 3:
-    modelcount = unpack.unpack7bit(data)
-    out['modelcount'] = modelcount
+    out['modelcount'] = unpack.unpack7bit(data)
   if version >= 6:
     uvcount = unpack.unpack7bit(data)
     uvdims = unpack.unpackbytes(uvcount, data)
@@ -128,12 +136,17 @@ def unpackheader(data):
       # no compression
       pass
     if compression == 1:
-      data = lz4.lz4decompress(data)
+      import cProfile
+      import copy
+      #cProfile.runctx("lz4.lz4decompress(copy.copy(data))", globals(), locals())
+      starttime('dec')
+      data = io.BytesIO(lz4.lz4decompress(data))
+      endtime('dec')
     if compression == 2:
       # i don't have to do this rn
       assert False, 'lzma compression not supported yet - RbCaVi ;)'
   
-  return out
+  return out, data
 
 def unpackfloat2(data):
   return unpack.unpackstruct('<ff', data)
@@ -151,27 +164,20 @@ def unpackint3(data):
   return unpack.unpackstruct('<iii', data)
 
 def unpackint(data):
-  i, = unpack.unpackstruct('<i', data)
-  return i
+  return unpack.unpackstruct('<i', data)[0]
 
 def unpackbonebinding(data):
-  i1 = unpack.unpack7bit(data)
-  i2 = unpack.unpack7bit(data)
-  i3 = unpack.unpack7bit(data)
-  i4 = unpack.unpack7bit(data)
-  weights = unpack.unpackstruct('<ffff', data)
-  return ((i1, i2, i3, i4), weights), data
+  return (
+    (unpack.unpack7bit(data), unpack.unpack7bit(data), unpack.unpack7bit(data), unpack.unpack7bit(data)), # bone indices
+    unpack.unpackstruct('<ffff', data) # weights
+  )
 
 def unpackstring(data):
   length = unpack.unpack7bit(data)
   return unpack.unpackbytes(length, data)
 
 def unpackarray(unpackx, count, data):
-  xs = []
-  for i in range(count):
-    x = unpackx(data)
-    xs.append(x)
-  return xs, data
+  return [unpackx(data) for _ in range(count)]
 
 def normalizebonebinding(b):
   idxs,weights = b
@@ -180,12 +186,12 @@ def normalizebonebinding(b):
   return idxs, weights
 
 def read(data):
-  data = unpack.DataSlice(data)
-  header = unpackheader(data)
+  data = io.BytesIO(data)
+  header,data = unpackheader(data)
   version = header['version']
   vertcount = header['vertexcount']
   
-  print(data)
+  #print(data)
 
   #print(header)
   #print(vertcount, 'vertices')
@@ -290,7 +296,7 @@ def read(data):
     blendshapes[name.decode('utf-8')] = blendshape
   out['blendshapes'] = blendshapes
 
-  assert len(data.data) == data.offset, 'file had extra data at the end'
+  assert unpack.isempty(data), 'file had extra data at the end'
 
   return out
 

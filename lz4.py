@@ -24,6 +24,7 @@
 #   it then copies 4 bytes to the end, maybe moves the backreference pointer back a few bytes, and copies <extra length 2> bytes to the end
 
 import struct
+import io
 
 import unpack
 
@@ -31,14 +32,12 @@ def unpack255len(data):
   # start with n = 15 because that's the condition
   # read any number of 255's and one non 255 byte
   # and sum them to get a length
-  offset = 0
   n = 15
-  while True:
-    ni = data[offset]
-    offset += 1
+  ni = 255
+  while ni == 255:
+    ni = unpack.unpackbyte(data)
     n += ni
-    if ni != 255:
-      return n, data[offset:]
+  return n
 
 # this is from https://github.com/MiloszKrajewski/lz4net/blob/master/src/LZ4ps/LZ4Codec.Safe32.Dirty.cs
 # and https://github.com/MiloszKrajewski/lz4net/blob/master/src/LZ4ps/LZ4Codec.Safe.cs
@@ -56,12 +55,12 @@ def securecopy(buf, src_p, count):
   # this function is equivalent to a copy starting from src_p without any overlap checking
   if count > 0:
     chunk = buf[src_p:]
-    buf += (chunk * ((count // len(chunk)) + 1))[:count]
-  return buf
+    return (chunk * ((count // len(chunk)) + 1))[:count]
+  return b''
 
-def blockcopy(src, dst, count):
+def blockcopy(src, count):
   # copy bytes by count
-  return dst + src[:count], src[count:]
+  return unpack.unpackbytes(count, src)
 
 COPYLENGTH = 8
 DECODER_TABLE_32 = [0, 3, 2, 3]
@@ -70,25 +69,25 @@ LASTLITERALS = 5
 def LZ4_uncompress_safe32(src, dst_len):
   dst = b''
   while True:
-    (lengths,),src = unpack.unpackbytes(1, src)
+    lengths = unpack.unpackbyte(src)
     length1 = lengths >> 4
     if length1 == 15:
-      length1,src = unpack255len(src)
-    dst,src = blockcopy(src, dst, length1)
+      length1 = unpack255len(src)
+    dst += blockcopy(src, length1)
     if len(dst) > dst_len - COPYLENGTH:
       assert len(dst) == dst_len, 'unclean end'
-      assert len(src) == 0, 'unconsumed input'
+      assert unpack.isempty(src), 'unconsumed input'
       return dst
-    (backoffset,),src = unpack.unpackstruct('<H', src)
+    backoffset, = unpack.unpackstruct('<H', src)
     assert backoffset <= len(dst), 'backreference underflow'
     dst_ref = -backoffset
     length2 = lengths & 15
     if length2 == 15:
-      length2,src = unpack255len(src)
-    dst = securecopy(dst, dst_ref, 4)
+      length2 = unpack255len(src)
+    dst += securecopy(dst, dst_ref, 4)
     if backoffset < 4:
       dst_ref -= DECODER_TABLE_32[backoffset]
-    dst = securecopy(dst, dst_ref, length2)
+    dst += securecopy(dst, dst_ref, length2)
     assert len(dst) <= dst_len - LASTLITERALS, 'not enough space for more literals'
 
 # this is mostly LZ4Stream::AcquireNextChunk()
@@ -96,19 +95,19 @@ def LZ4_uncompress_safe32(src, dst_len):
 def lz4decompress(data):
   decompressed = b''
   while True:
-    if len(data) == 0:
+    if unpack.isempty(data):
       return decompressed
-    flags,data = unpack.unpack7bit(data)
+    flags = unpack.unpack7bit(data)
     flag = bool(flags & 1)
-    l1,data = unpack.unpack7bit(data)
+    l1 = unpack.unpack7bit(data)
     if not flag:
-      chunk,data = unpack.unpackbytes(l1, data)
+      chunk = unpack.unpackbytes(l1, data)
     else:
-      l2,data = unpack.unpack7bit(data)
+      l2 = unpack.unpack7bit(data)
       if l2 > l1:
         assert False, 'invalid size? - compressed data is not compressed :('
-      chunk,data = unpack.unpackbytes(l2, data)
-      chunk = LZ4_uncompress_safe32(chunk, l1)
+      chunk = unpack.unpackbytes(l2, data)
+      chunk = LZ4_uncompress_safe32(io.BytesIO(chunk), l1)
     decompressed += chunk
 
 def LZ4_uncompress_safe32_start(src, dst_len, n):
@@ -116,25 +115,25 @@ def LZ4_uncompress_safe32_start(src, dst_len, n):
   while True:
     if len(dst) > n:
       return dst
-    (lengths,),src = unpack.unpackbytes(1, src)
+    lengths = unpack.unpackbyte(src)
     length1 = lengths >> 4
     if length1 == 15:
-      length1,src = unpack255len(src)
-    dst,src = blockcopy(src, dst, length1)
+      length1 = unpack255len(src)
+    dst += blockcopy(src, length1)
     if len(dst) > dst_len - COPYLENGTH:
       assert len(dst) == dst_len, 'unclean end'
       assert len(src) == 0, 'unconsumed input'
       return dst
-    (backoffset,),src = unpack.unpackstruct('<H', src)
+    (backoffset,) = unpack.unpackstruct('<H', src)
     assert backoffset <= len(dst), 'backreference underflow'
     dst_ref = -backoffset
     length2 = lengths & 15
     if length2 == 15:
-      length2,src = unpack255len(src)
-    dst = securecopy(dst, dst_ref, 4)
+      length2 = unpack255len(src)
+    dst += securecopy(dst, dst_ref, 4)
     if backoffset < 4:
       dst_ref -= DECODER_TABLE_32[backoffset]
-    dst = securecopy(dst, dst_ref, length2)
+    dst += securecopy(dst, dst_ref, length2)
     assert len(dst) <= dst_len - LASTLITERALS, 'not enough space for more literals'
 
 # attempt to decompress only `n` bytes
@@ -146,15 +145,15 @@ def lz4decompressstart(data, n):
       return decompressed
     if len(data) == 0:
       return decompressed
-    flags,data = unpack.unpack7bit(data)
+    flags = unpack.unpack7bit(data)
     flag = bool(flags & 1)
-    l1,data = unpack.unpack7bit(data)
+    l1 = unpack.unpack7bit(data)
     if not flag:
-      chunk,data = unpack.unpackbytes(min(l1, 6), data)
+      chunk = unpack.unpackbytes(min(l1, 6), data)
     else:
-      l2,data = unpack.unpack7bit(data)
+      l2 = unpack.unpack7bit(data)
       if l2 > l1:
         assert False, 'invalid size? - compressed data is not compressed :('
-      chunk,data = unpack.unpackbytes(l2, data)
+      chunk = unpack.unpackbytes(l2, data)
       chunk = LZ4_uncompress_safe32_start(chunk, l1, n)
     decompressed += chunk
