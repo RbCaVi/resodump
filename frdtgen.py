@@ -45,26 +45,21 @@ class FrdtGenContext:
     o['ID'] = '###id###'
     o['Persistent-ID'] = '###id###'
     o['ParentReference'] = '###id###'
+    idp = o.pop('id', None)
     out = {}
+    out['Children'] = [self.processobject1(c) for c in o.pop('Children')]
+    out['Components'] = [self.processcomponent1(c) for c in o.pop('Components')]
     for prop,value in o.items():
       if value == '###id###': # no sane person will put this as a string value right?
-        out[prop] = self.getid()
-        continue
-      if prop == 'id':
-        continue
-      if prop == 'Children':
-        out['Children'] = [self.processobject1(c) for c in value]
-        continue
-      if prop == 'Components':
-        out['Components'] = [self.processcomponent1(c) for c in value]
-        continue
+        value = self.getid()
       else:
         value = self.processvalue1(value)
-      if type(value) != dict or 'ID' not in value:
-        value = {"ID": self.getid(), "Data": value}
+        if type(value) != dict or 'ID' not in value:
+          # wrap a normal value in a member with an id
+          value = {"ID": self.getid(), "Data": value}
       out[prop] = value
-    if 'id' in o:
-      self.idmap[o['id']] = out['ID']
+    if idp is not None:
+      self.idmap[idp] = out['ID']
     return out
 
   def processcomponent1(self, c):
@@ -83,22 +78,19 @@ class FrdtGenContext:
     c.setdefault('UpdateOrder', 0)
     c['ID'] = '###id###'
     c['persistent-ID'] = '###id###'
+    idp = c.pop('id', None)
     out = {}
+    out['type'] = c.pop('type')
     for prop,value in c.items():
       if value == '###id###': # no sane person will put this as a string value right?
-        out[prop] = self.getid()
-        continue
-      if prop == 'id':
-        continue
-      if prop == 'type':
-        out['type'] = value
-        continue
-      value = self.processvalue1(value)
-      if type(value) != dict or 'ID' not in value:
-        value = {"ID": self.getid(), "Data": value}
+        value = self.getid()
+      else:
+        value = self.processvalue1(value)
+        if type(value) != dict or 'ID' not in value:
+          value = {"ID": self.getid(), "Data": value}
       out[prop] = value
-    if 'id' in c:
-      self.idmap[c['id']] = out['ID']
+    if idp is not None:
+      self.idmap[idp] = out['ID']
     return out
 
   def processasset1(self, a):
@@ -118,22 +110,19 @@ class FrdtGenContext:
     a.setdefault('UpdateOrder', 0)
     a.setdefault('persistent', False)
     a['ID'] = '###id###'
+    idp = a.pop('id', None)
     out = {}
+    out['type'] = a.pop('type')
     for prop,value in a.items():
       if value == '###id###': # no sane person will put this as a string value right?
-        out[prop] = self.getid()
-        continue
-      if prop == 'id':
-        continue
-      if prop == 'type':
-        out['type'] = value
-        continue
-      value = self.processvalue1(value)
-      if type(value) != dict or 'ID' not in value:
-        value = {"ID": self.getid(), "Data": value}
+        value = self.getid()
+      else:
+        value = self.processvalue1(value)
+        if type(value) != dict or 'ID' not in value:
+          value = {"ID": self.getid(), "Data": value}
       out[prop] = value
-    if 'id' in a:
-      self.idmap[a['id']] = out['ID']
+    if idp is not None:
+      self.idmap[idp] = out['ID']
     return out
 
   def processvalue1(self, v):
@@ -142,17 +131,16 @@ class FrdtGenContext:
     if type(v) == dict:
       if 'id' in v and 'ID' not in v:
         v['ID'] = '###id###'
+      idp = v.pop('id', None)
       out = {}
       for prop,value in v.items():
         if value == '###id###': # no sane person will put this as a string value right?
-          out[prop] = self.getid()
-          continue
-        if prop == 'id':
-          continue
-        value = self.processvalue1(value)
+          value = self.getid()
+        else:
+          value = self.processvalue1(value)
         out[prop] = value
-      if 'id' in v:
-        self.idmap[v['id']] = out['ID']
+      if idp is not None:
+        self.idmap[idp] = out['ID']
       return out
     elif type(v) == list:
       return [self.processvalue1(sv) for sv in v]
@@ -168,12 +156,9 @@ class FrdtGenContext:
 
   def processcomponent2(self, c):
     # resolve id references and restructure
+    t = c.pop('type')
     for prop,value in c.items():
-      if prop == 'type':
-        continue
-      c[prop] = self.processvalue2(c[prop])
-    t = c['type']
-    del c['type']
+      c[prop] = self.processvalue2(value)
     return {'Type': t, 'Data': c}
     
   processasset2 = processcomponent2
