@@ -10,6 +10,8 @@ import resonitepackage
 import meshx
 import lz4
 
+import timer
+
 #packagename = 'Redprint Manager 2.4.zip'
 #packagename = 'out/inventory-tool.resonitepackage'
 packagename = sys.argv[1]
@@ -32,4 +34,6 @@ with resonitepackage.ResonitePackage(packagename) as package:
         continue
     print(f'yes, {len(data)} bytes')
     with open(os.path.join('out', assethash + '-mesh.json'), 'w') as f:
-      json.dump(meshx.read(data), f)
+      with timer.timer('mesh'):
+        m = meshx.read(data)
+      json.dump(m, f)
