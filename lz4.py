@@ -66,20 +66,36 @@ COPYLENGTH = 8
 DECODER_TABLE_32 = [0, 3, 2, 3]
 LASTLITERALS = 5
 
-class WriteSlice:
-  def __init__(self, length):
+class LZ4ChunkStream:
+  def __init__(self, src, length):
     self.buf = bytearray(length)
-    self.off = 0
+    self.woff = 0
+    self.roff = 0
+    self.it = LZ4_uncompress_safe32(src, self, length)
+    self.sentinel = object()
   
   def append(self, data):
     l = len(data)
-    self.buf[self.off:self.off + l] = data
-    self.off += l
+    self.buf[self.woff:self.woff + l] = data
+    self.woff += l
     return data
   
   def securecopy(self, start, count):
-    chunk = self.buf[self.off + start:self.off]
-    return self.append((chunk * ((count // len(chunk)) + 1))[:count])
+    # start is always negative
+    chunk = self.buf[self.woff + start:self.woff]
+    return (chunk * ((count // len(chunk)) + 1))[:count]
+  
+  def read(self, size):
+    end = self.roff + size
+    while self.woff < end:
+      chunk = next(self.it, self.sentinel)
+      if chunk == self.sentinel:
+        end = self.woff
+      else:
+        self.append(chunk)
+    data = self.buf[self.roff:end]
+    self.roff = end
+    return data
 
 def LZ4_uncompress_safe32(src, dst, dst_len):
   while True:
@@ -87,25 +103,25 @@ def LZ4_uncompress_safe32(src, dst, dst_len):
     length1 = lengths >> 4
     if length1 == 15:
       length1 = unpack255len(src)
-    yield io.BytesIO(dst.append(blockcopy(src, length1)))
-    if dst.off > dst_len - COPYLENGTH:
+    yield blockcopy(src, length1)
+    if dst.woff > dst_len - COPYLENGTH:
       assert unpack.isempty(src), 'unconsumed input'
-      assert dst.off == len(dst.buf), 'unclean end'
+      assert dst.woff == len(dst.buf), 'unclean end'
       return
     backoffset, = unpack.unpackstruct('<H', src)
-    assert backoffset <= dst.off, 'backreference underflow'
+    assert backoffset <= dst.woff, 'backreference underflow'
     dst_ref = -backoffset
     length2 = lengths & 15
     if length2 == 15:
       length2 = unpack255len(src)
-    yield io.BytesIO(dst.securecopy(dst_ref, 4))
+    yield dst.securecopy(dst_ref, 4)
     if backoffset < 4:
       dst_ref -= DECODER_TABLE_32[backoffset]
-    yield io.BytesIO(dst.securecopy(dst_ref, length2))
-    assert dst.off <= dst_len - LASTLITERALS, 'not enough space for more literals'
+    yield dst.securecopy(dst_ref, length2)
+    assert dst.woff <= dst_len - LASTLITERALS, 'not enough space for more literals'
 
 class ChainStream:
-  # convert an iterator of streams into a "file like" object (with only .read())
+  # convert an iterator of streams with .read() into a stream with only .read()
   def __init__(self, it):
     # it is an iterable of bytes
     self.it = it
@@ -155,7 +171,7 @@ def lz4decompressstream(data):
       if l2 > l1:
         assert False, 'invalid size? - compressed data is not compressed :('
       chunk = StreamSlice(data, l2)
-      yield from LZ4_uncompress_safe32(chunk, WriteSlice(l1), l1)
+      yield LZ4ChunkStream(chunk, l1)
 
 def lz4decompress(data):
   return ChainStream(lz4decompressstream(data))
