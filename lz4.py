@@ -75,43 +75,41 @@ class WriteSlice:
     l = len(data)
     self.buf[self.off:self.off + l] = data
     self.off += l
+    return data
   
   def securecopy(self, start, count):
     chunk = self.buf[self.off + start:self.off]
-    self.append((chunk * ((count // len(chunk)) + 1))[:count])
-  
-  def get(self):
-    assert self.off == len(self.buf), 'unclean end'
-    return self.buf
+    return self.append((chunk * ((count // len(chunk)) + 1))[:count])
 
-def LZ4_uncompress_safe32(src, dst_len):
-  dst = WriteSlice(dst_len)
+def LZ4_uncompress_safe32(src, dst, dst_len):
   while True:
     lengths = unpack.unpackbyte(src)
     length1 = lengths >> 4
     if length1 == 15:
       length1 = unpack255len(src)
-    dst.append(blockcopy(src, length1))
+    yield io.BytesIO(dst.append(blockcopy(src, length1)))
     if dst.off > dst_len - COPYLENGTH:
       assert unpack.isempty(src), 'unconsumed input'
-      return dst.get()
+      assert dst.off == len(dst.buf), 'unclean end'
+      return
     backoffset, = unpack.unpackstruct('<H', src)
     assert backoffset <= dst.off, 'backreference underflow'
     dst_ref = -backoffset
     length2 = lengths & 15
     if length2 == 15:
       length2 = unpack255len(src)
-    dst.securecopy(dst_ref, 4)
+    yield io.BytesIO(dst.securecopy(dst_ref, 4))
     if backoffset < 4:
       dst_ref -= DECODER_TABLE_32[backoffset]
-    dst.securecopy(dst_ref, length2)
+    yield io.BytesIO(dst.securecopy(dst_ref, length2))
     assert dst.off <= dst_len - LASTLITERALS, 'not enough space for more literals'
 
-class ChunkStream:
+class ChainStream:
+  # convert an iterator of streams into a "file like" object (with only .read())
   def __init__(self, it):
     # it is an iterable of bytes
     self.it = it
-    self.buf = io.BytesIO(next(self.it))
+    self.buf = next(self.it)
     self.sentinel = object()
   
   def read(self, size):
@@ -124,8 +122,22 @@ class ChunkStream:
         buf = next(self.it, self.sentinel)
         if buf == self.sentinel:
           break
-        self.buf = io.BytesIO(buf)
+        self.buf = buf
     return out
+
+class StreamSlice:
+  # the first size bytes of a stream
+  # make sure you use all of them before using the original stream again
+  def __init__(self, stream, size):
+    self.stream = stream
+    self.size = size
+    self.off = 0
+  
+  def read(self, size):
+    if self.off + size > self.size:
+      size = self.size - self.off
+    self.off += size
+    return self.stream.read(size)
 
 # this is mostly LZ4Stream::AcquireNextChunk()
 # then i concatenate all the chunks together
@@ -137,17 +149,16 @@ def lz4decompressstream(data):
     flag = bool(flags & 1)
     l1 = unpack.unpack7bit(data)
     if not flag:
-      chunk = unpack.unpackbytes(l1, data)
+      yield io.BytesIO(unpack.unpackbytes(l1, data))
     else:
       l2 = unpack.unpack7bit(data)
       if l2 > l1:
         assert False, 'invalid size? - compressed data is not compressed :('
-      chunk = unpack.unpackbytes(l2, data)
-      chunk = LZ4_uncompress_safe32(io.BytesIO(chunk), l1)
-    yield chunk
+      chunk = StreamSlice(data, l2)
+      yield from LZ4_uncompress_safe32(chunk, WriteSlice(l1), l1)
 
 def lz4decompress(data):
-  return ChunkStream(lz4decompressstream(data))
+  return ChainStream(lz4decompressstream(data))
 
 def LZ4_uncompress_safe32_start(src, dst_len, n):
   dst = b''
