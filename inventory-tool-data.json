@@ -13,7 +13,7 @@
         "LocalTipReference": null,
         "UseLaser": true,
         "BlockPrimaryWhenTouching": false,
-        "UseSecondary": false,
+        "UseSecondary": true,
         "AllowUseWhenHolding": false,
         "Equipped": false,
         "ControllerType": -1,
