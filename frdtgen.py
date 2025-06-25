@@ -189,3 +189,38 @@ class FrdtGenContext:
       if 'Children' in o:
         for c in o['Children']:
           self.addprotoflux(c)
+
+def generate(tree):
+  frdtcontext = FrdtGenContext()
+
+  frdtcontext.addprotoflux(tree['Object'])
+
+  o = frdtcontext.processobject1(tree['Object'])
+  assets = [frdtcontext.processasset1(a) for a in tree['Assets']]
+
+  o = frdtcontext.processobject2(o)
+  assets = [frdtcontext.processasset2(a) for a in assets]
+
+  out = {
+    "VersionNumber": "2025.5.23.1096",
+    "FeatureFlags": {
+      "ColorManagement": 0,
+      "ResetGUID": 0,
+      "ProtoFlux": 0,
+      "TEXTURE_QUALITY": 0,
+      "TypeManagement": 0,
+      "ALIGNER_FILTERING": 0,
+      "PhotonDust": 0,
+      "Awwdio": 0
+    },
+    "TypeVersions": {
+      # what do i put here
+      # can i use some kind of.... reflection?
+    }
+  }
+
+  out['Types'] = frdtcontext.types
+  out['Assets'] = assets
+  out['Object'] = o
+  
+  return out, frdtcontext.assethashes

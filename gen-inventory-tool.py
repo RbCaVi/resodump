@@ -5,46 +5,9 @@ import json
 with open('inventory-tool-data.json', 'r') as f:
   tree = json.load(f)
 
-frdtcontext = frdtgen.FrdtGenContext()
-
-frdtcontext.addprotoflux(tree['Object'])
-
-o = frdtcontext.processobject1(tree['Object'])
-assets = [frdtcontext.processasset1(a) for a in tree['Assets']]
-
-#print(idmap)
-
-o = frdtcontext.processobject2(o)
-assets = [frdtcontext.processasset2(a) for a in assets]
-
-import pprint
-
-out = {
-  "VersionNumber": "2025.5.23.1096",
-  "FeatureFlags": {
-    "ColorManagement": 0,
-    "ResetGUID": 0,
-    "ProtoFlux": 0,
-    "TEXTURE_QUALITY": 0,
-    "TypeManagement": 0,
-    "ALIGNER_FILTERING": 0,
-    "PhotonDust": 0,
-    "Awwdio": 0
-  },
-  "TypeVersions": {
-    # what do i put here
-    # can i use some kind of.... reflection?
-  }
-}
-
-out['Types'] = frdtcontext.types
-out['Assets'] = assets
-out['Object'] = o
+out,assethashes = frdtgen.generate(tree)
 
 import frdt
-
-#with open('out.frdt', 'wb') as f:
-#  f.write(frdt.write(out))
 
 import resonitepackage
 import datetime
@@ -175,7 +138,7 @@ with open('out/tool.meshx', 'wb') as f:
   f.write(meshx.write(mesh))
 
 with resonitepackage.ResonitePackage('out/inventory-tool.resonitepackage', 'w') as package:
-  for a,h in frdtcontext.assethashes.items():
+  for a,h in assethashes.items():
     with open(a, 'rb') as f:
       data = f.read()
       package.addasset(h, data)
