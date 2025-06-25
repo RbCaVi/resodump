@@ -1,0 +1,159 @@
+{
+  "Object": {"Name": "top",
+    "Children": [
+      {"Name": "Test Tool",
+        "Components": [
+          {"type": "[FrooxEngine]FrooxEngine.RawDataTool", "id": "tool",
+            "_equipLink": null,
+            "TipReference": null,
+            "BlockGripEquip": false,
+            "BlockRemoteEquip": false,
+            "EquipName": "Inventory Tool",
+            "_overrideActiveTool": null,
+            "_gripPosesGenerated": true,
+            "LocalTipOffset": [0, 0, 0],
+            "LocalTipReference": null,
+            "UseLaser": true,
+            "BlockPrimaryWhenTouching": false,
+            "UseSecondary": true,
+            "AllowUseWhenHolding": false,
+            "Equipped": false,
+            "ControllerType": -1,
+            "ControllerSide": "-1",
+            "PrimaryStrength": null,
+            "SecondaryAxis": null,
+            "Primary": null,
+            "Secondary": null,
+            "_primaryStrengthStream": null,
+            "_secondaryAxisStream": null,
+            "_primaryStream": null,
+            "_secondaryStream": null,
+            "_rawStrength": 0,
+            "_rawAxis": [0, 0],
+            "_rawPrimary": false,
+            "_rawSecondary": false,
+            "PrimaryActionDescription": "Toggle inventory",
+            "SecondaryActionDescription": ""
+          },
+          {"type": "[FrooxEngine]FrooxEngine.Grabbable",
+            "ReparentOnRelease": true,
+            "PreserveUserSpace": true,
+            "DestroyOnRelease": false,
+            "GrabPriority": 1,
+            "GrabPriorityWhenGrabbed": -1,
+            "CustomCanGrabCheck": {"Target": null},
+            "EditModeOnly": false,
+            "AllowSteal": false,
+            "DropOnDisable": true,
+            "ActiveUserFilter": "Disabled",
+            "OnlyUsers": [],
+            "Scalable": false,
+            "Receivable": true,
+            "AllowOnlyPhysicalGrab": false,
+            "_grabber": null,
+            "_lastParent": null,
+            "_lastParentIsUserSpace": true,
+            "__legacyActiveUserRootOnly-ID": "###id###"
+          },
+          {"type": "[FrooxEngine]FrooxEngine.MeshCollider",
+            "Offset": [0, 0, 0],
+            "Type": "NoCollision",
+            "Mass": 1,
+            "CharacterCollider": false,
+            "IgnoreRaycasts": false,
+            "Mesh": "###toolmesh###",
+            "Sidedness": "Front",
+            "ActualSpeculativeMargin": null
+          },
+          {"type": "[FrooxEngine]FrooxEngine.MeshRenderer",
+            "Mesh": "###toolmesh###",
+            "Materials": [
+              {
+                "ID": "###id###",
+                "Data": "###unlitgrey###"
+              }
+            ],
+            "MaterialPropertyBlocks": [],
+            "ShadowCastMode": "On",
+            "MotionVectorMode": "Object",
+            "SortingOrder": 0
+          }
+        ],
+        "Children": [
+          {"Name": "Left Grip Pose",
+            "Components": [
+              {
+                "type": "[FrooxEngine]FrooxEngine.GripPoseReference",
+                "Enabled": true,
+                "HandSide": "Left",
+                "_rootPos": [0, 0, 0],
+                "TipReference": null,
+                "ShowVisual-ID": "###id###",
+                "DisableSlider-ID": "###id###",
+                "_activeVisual": null
+              }
+            ]
+          },
+          {"Name": "Right Grip Pose",
+            "Components": [
+              {
+                "type": "[FrooxEngine]FrooxEngine.GripPoseReference",
+                "Enabled": true,
+                "HandSide": "Right",
+                "_rootPos": [0, 0, 0],
+                "TipReference": null,
+                "ShowVisual-ID": "###id###",
+                "DisableSlider-ID": "###id###",
+                "_activeVisual": null
+              }
+            ]
+          }
+        ]
+      },
+      {"Name": "Code", "source": "test-tool.pft"}
+    ]
+  },
+  "Assets": [
+    {"type": "[FrooxEngine]FrooxEngine.StaticMesh", "id": "toolmesh",
+      "URL": "##@out/tool.meshx###",
+      "Readable": false
+    },
+    {"type": "[FrooxEngine]FrooxEngine.UnlitMaterial", "id": "unlitgrey",
+      "HighPriorityIntegration": false,
+      "TintColor": [0.8, 0.8, 0.8, 1.0, "Linear"],
+      "Texture": null,
+      "TextureScale": [1, 1],
+      "TextureOffset": [0, 0],
+      "MaskTexture": null,
+      "MaskScale": [1, 1],
+      "MaskOffset": [0, 0],
+      "MaskMode": "MultiplyAlpha",
+      "BlendMode": "Alpha",
+      "AlphaCutoff": 0.5,
+      "UseVertexColors": false,
+      "VertexColorInterpolationSpace": "Linear",
+      "Sidedness": "Double",
+      "ZWrite": "Auto",
+      "OffsetTexture": null,
+      "OffsetMagnitude": [0, 0],
+      "OffsetTextureScale": [1, 1],
+      "OffsetTextureOffset": [0, 0],
+      "PolarUVmapping": false,
+      "PolarPower": 1,
+      "StereoTextureTransform": false,
+      "RightEyeTextureScale": [1, 1],
+      "RightEyeTextureOffset": [0, 0],
+      "DecodeAsNormalMap": false,
+      "UseBillboardGeometry": false,
+      "UsePerBillboardScale": false,
+      "UsePerBillboardRotation": false,
+      "UsePerBillboardUV": false,
+      "BillboardSize": [0.005, 0.005],
+      "OffsetFactor": 10,
+      "OffsetUnits": 0,
+      "RenderQueue": -1,
+      "_unlit-ID": "###id###",
+      "_unlitBillboard-ID": "###id###"
+    }
+  ]
+}

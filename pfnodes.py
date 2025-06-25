@@ -107,6 +107,14 @@ nodes = {
     'out': [],
     'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.If',
   },
+  ('Impulse', 'Display'): {
+    'impulses': 'builtin', # uh...
+    'impulsein': True,
+    'impulseout': [],
+    'in': [],
+    'out': [],
+    'node': '[ProtoFluxBindings]FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.ImpulseDisplay',
+  },
   ('Local', 'Transform'): {
     'in': [['Slot', 'Instance']],
     'out': [['float3', 'LocalPosition'], ['floatq', 'LocalRotation'], ['float3', 'LocalScale']],
