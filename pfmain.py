@@ -196,6 +196,10 @@ def intersecttypes2(t1, t2):
     return t2
   if t2 == '$':
     return t1
+  if type(t1) == str:
+    t1 = {t1}
+  if type(t2) == str:
+    t2 = {t2}
   ts = set()
   for t in t1:
     if typeincluded(t, t2):
@@ -272,7 +276,7 @@ def choosenode(nodedata, intypes, outtypes):
     nodes = [choosenode(form, intypes, outtypes) for form in nodedata['forms']]
     nodes = [node for node in nodes if node is not None]
     if len(nodes) > 1:
-      print(f"INFO: choosing one node of {nodes}")
+      print(f"INFO: choosing one node of {nodes}: {intypes}, {outtypes}")
     return nodes[0]
   nodein = nodedata['in']
   nodeout = nodedata['out']
@@ -296,6 +300,7 @@ def choosenode(nodedata, intypes, outtypes):
     nodeout = [(gtype if t == '$' else {t}, n) for t,n in nodeout]
   else:
     gtype = None
+  #print(intypes, nodein, [intersecttypes2(it, t) for it,(t,n) in zip(intypes, nodein)])
   if any(intersecttypes2(it, t) == set() for it,(t,n) in zip(intypes, nodein)) or any(intersecttypes2(ot, t) == set() for ot,(t,n) in zip(outtypes, nodeout)):
     return None
   return [nodedata, gtype]
