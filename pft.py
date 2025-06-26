@@ -82,7 +82,7 @@ def lex(s):
     yield token
 
 def pass1(tokens):
-  # process @, [ ], [[ ]], < >, =
+  # process @, [ ], [[ ]], < >
   out = []
   tokens = iter(tokens)
   for token in tokens:
@@ -133,17 +133,6 @@ def pass1(tokens):
       token = ('tag', token)
     elif token[0] == '>':
       assert False, 'error: unmatched >'
-    elif token[0] == '=':
-      token = out.pop()
-      assert token[0] in ['name', 'iname'], f'error: non name before =: {token}'
-      names = [token]
-      while len(out) > 0 and out[-1][0] == ',':
-        out.pop()
-        token = out.pop()
-        assert token[0] in ['name', 'iname'], f'error: non name before , and =: {token}'
-        assert token not in names, f'error: duplicate variable: {token}'
-        names.insert(0, token)
-      token = ('assign', tuple(names))
     if token[0] in ['float', 'int', 'string']:
       token = ('literal', token[0], token[1])
     if token[0] == 'rname':
@@ -152,7 +141,7 @@ def pass1(tokens):
   return out
 
 def pass2(tokens):
-  # process ( )
+  # process ( ), =
   out = []
   tokens = iter(tokens)
   for token in tokens:
@@ -172,9 +161,21 @@ def pass2(tokens):
           assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
           args.append(token)
         token = ('args', tuple(args))
+    elif token[0] == '=':
+      token = out.pop()
+      assert token[0] in ['name', 'iname'], f'error: non name before =: {token}'
+      names = [token]
+      while len(out) > 0 and out[-1][0] == ',':
+        out.pop()
+        token = out.pop()
+        assert token[0] in ['name', 'iname'], f'error: non name before , and =: {token}'
+        assert token not in names, f'error: duplicate variable: {token}'
+        names.insert(0, token)
+      token = ('assign', tuple(names))
     elif token[0] == ')':
       assert False, 'error: unmatched )'
-    yield token
+    out.append(token)
+  return out
 
 def pass3(tokens):
   # combine <assign>? <fname> <tag>? <args>
