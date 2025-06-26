@@ -82,32 +82,29 @@ def lex(s):
     tokens.append(token)
   return tokens
 
-def gettoken(tokens):
-  return tokens[0], tokens[1:]
-
 def pass1(tokens):
   # process @, [ ], [[ ]], < >, =
   out = []
   while len(tokens) > 0:
-    token,tokens = gettoken(tokens)
+    token = tokens.pop(0)
     if token[0] == '@':
-      token,tokens = gettoken(tokens)
+      token = tokens.pop(0)
       assert token[0] == 'name', f'error: @ before non name: {token}'
       token[0] = 'iname'
     elif token[0] == '[':
-      token,tokens = gettoken(tokens)
+      token = tokens.pop(0)
       if token[0] == 'name':
-        close,tokens = gettoken(tokens)
+        close = tokens.pop(0)
         assert close[0] == ']', f'error: no matching ]: {close}'
         token[0] = 'fname'
       elif token[0] in ['int', 'float']:
         components = [token]
         while True:
-          token,tokens = gettoken(tokens)
+          token = tokens.pop(0)
           if token[0] == ']':
             break
           assert token[0] == ',', f'error: expected comma after components: {components}'
-          token,tokens = gettoken(tokens)
+          token = tokens.pop(0)
           assert token[0] in ['int', 'float'], f'error: disallowed component type: {token}'
           components.append(token)
         if 'float' in [t for t,v in components]:
@@ -122,17 +119,17 @@ def pass1(tokens):
     elif token[0] == ']':
       assert False, 'error: unmatched ]'
     elif token[0] == '[[':
-      token,tokens = gettoken(tokens)
+      token = tokens.pop(0)
       assert token[0] == 'name', f'error: [[ before non name: {token}'
-      close,tokens = gettoken(tokens)
+      close = tokens.pop(0)
       assert close[0] == ']]', f'error: no matching ]]: {close}'
       token[0] = 'rname'
     elif token[0] == ']]':
       assert False, 'error: unmatched ]]'
     elif token[0] == '<':
-      token,tokens = gettoken(tokens)
+      token = tokens.pop(0)
       assert token[0] in ['name', 'int', 'float', 'string'], f'error: < before non name: {token}'
-      close,tokens = gettoken(tokens)
+      close = tokens.pop(0)
       assert close[0] == '>', f'error: no matching >: {close}'
       token = ('tag', token)
     elif token[0] == '>':
@@ -159,20 +156,20 @@ def pass2(tokens):
   # process ( )
   out = []
   while len(tokens) > 0:
-    token,tokens = gettoken(tokens)
+    token = tokens.pop(0)
     if token[0] == '(':
-      token,tokens = gettoken(tokens)
+      token = tokens.pop(0)
       if token[0] == ')':
         token = ('args', ())
       else:
         assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
         args = [token]
         while True:
-          token,tokens = gettoken(tokens)
+          token = tokens.pop(0)
           if token[0] == ')':
             break
           assert token[0] == ',', f'error: expected comma after args: {args}'
-          token,tokens = gettoken(tokens)
+          token = tokens.pop(0)
           assert token[0] in ['name', 'iname', 'fname', 'literal'], f'error: disallowed arg type: {token}'
           args.append(token)
         token = ('args', tuple(args))
@@ -185,7 +182,7 @@ def pass3(tokens):
   # combine <assign>? <fname> <tag>? <args>
   out = []
   while len(tokens) > 0:
-    token,tokens = gettoken(tokens)
+    token = tokens.pop(0)
     if token[0] == 'args':
       args = token[1]
       if len(out) > 0 and out[-1][0] == 'tag':
@@ -209,7 +206,7 @@ def pass4(tokens):
   # combine <any> ':' '{'
   out = []
   while len(tokens) > 0:
-    token,tokens = gettoken(tokens)
+    token = tokens.pop(0)
     if token[0] == '{':
       token = out.pop()
       if token[0] == ':':
