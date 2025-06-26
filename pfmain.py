@@ -7,29 +7,6 @@ import pfc
 
 vids = itertools.count()
 
-#pprint.pprint(code)
-
-def w(ss):
-  for s in ss:
-    if s[0] == 'stmt':
-      for subblock in s[5]:
-        w(subblock[2])
-    else:
-      print(s)
-
-#w(code)
-
-# def findfuncs(code):
-#   funcs = []
-#   def f(stmt, path):
-#     funcs.append(stmt[2])
-#   pfc.walk(code, f)
-#   return funcs
-#
-# funcs = findfuncs(code)
-#
-# ufuncs = [fn for fn,_ in itertools.groupby(sorted(funcs))]
-
 def walk2(code, f):
   # apply the function to code blocks instead of statements
   f(code, ())
