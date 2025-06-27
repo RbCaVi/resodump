@@ -98,6 +98,7 @@ def flattenbranches(code, ivarlist):
         blocks = [[name, f(block)] for name,block in blocks]
         invars = [] # going into the blocks
         outvars = [] # going out of the blocks
+        #print(substmt[0][1])
         for name,connectout in pfnodes.getnode(substmt[0][1])['impulseout']:
           if ['name', (name,)] in [name for name,block in blocks]:
             block = [block for bname,block in blocks if bname == ['name', (name,)]][0]
@@ -422,7 +423,11 @@ def generate(s, pid):
     datanodes = stripdatanodes(code)
     ivarlist = [v for vs in ivars.values() for n,v in vs]
     vvarlist = [v for vs in vvars.values() for n,v in vs]
+    #import pprint
+    #pprint.pprint(code)
     code = flattenbranches(code, ivarlist)
+    #import pprint
+    #pprint.pprint(code)
     if code[-1][0] == ['name', ('Return',)]:
       var = ['var', 'ie'] # this will be stripped by removejoins(), but it'll leave an impulse input on the first statement for an entry point
       ivarlist.append(var)
@@ -511,6 +516,8 @@ def generate(s, pid):
         renamevar(finalcode, rv, ret)
 
   finalcode = [s for s in finalcode if s[0] not in [['name', ('Return',)]]]
+  #import pprint
+  #pprint.pprint(finalcode)
 
   ivars = []
   vvars = []
@@ -691,10 +698,10 @@ def generate(s, pid):
 
   def typeof(v):
     if v[0] == 'literal':
-      if v[1] == 'rname':
+      if v[1][0] == 'rname':
         return '$' # nope not going to do this
-      if v[1] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode', 'float3', 'Slot', 'Tool']:
-        return {v[1]}
+      if v[1][0] in ['string', 'int', 'float', 'bool', 'null', 'BodyNode', 'float3', 'Slot', 'Tool']:
+        return {v[1][0]}
     return types[tuple(v)]
 
   for node in finalcode:
@@ -706,20 +713,22 @@ def generate(s, pid):
     #print('t', intypes,outtypes)
     if set(['nope']) in intypes + outtypes or set() in intypes + outtypes:
       print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
-    for it,iv in zip(intypes, node[3]):
+    for i,(it,iv) in enumerate(zip(intypes, node[3])):
       if iv[0] == 'var':
         #print('set', types[tuple(iv)], it, iv, intersecttypes(types[tuple(iv)], it))
         if set(['nope']) == intersecttypes(types[tuple(iv)], it) or set() == intersecttypes(types[tuple(iv)], it):
           print('WARNING:', node[0], 'does not match', [typeof(v) for v in node[3]], [typeof(v) for v in node[5]])
         types[tuple(iv)] = intersecttypes(types[tuple(iv)], it)
-      if iv[0] == 'literal' and iv[1] == 'null':
+      if iv[0] == 'literal' and iv[1][0] == 'null':
         if len(it) > 1:
           print(f'WARNING: null with multiple possible types: {node}, {it}')
-        iv[1] = [*it][0]
-      if iv[0] == 'literal' and iv[1] == 'rname':
+        iv[1][0] = [*it][0]
+        node[3][i] = (iv[0], tuple(iv[1]))
+      if iv[0] == 'literal' and iv[1][0] == 'rname':
         if len(it) > 1:
           print(f'WARNING: reference with multiple possible types: {node}, {it}')
-        iv[1] = [*it][0]
+        iv[1][0] = [*it][0]
+        node[3][i] = (iv[0], tuple(iv[1]))
     for ot,ov in zip(outtypes, node[5]):
       #print('set', types[tuple(ov)], ot, ov, intersecttypes(types[tuple(ov)], ot))
       if set(['nope']) == intersecttypes(types[tuple(ov)], ot) or set() == intersecttypes(types[tuple(ov)], ot):
@@ -732,6 +741,7 @@ def generate(s, pid):
     for arg in node[3]:
       if arg[0] == 'var':
         continue
+      #print(arg)
       constants.add(tuple(arg))
       #print(arg)
 
@@ -739,7 +749,8 @@ def generate(s, pid):
   nodes = []
 
   for c in constants:
-    _,ctype,cval = c
+    #print(c)
+    _,(ctype,cval) = c
     #print(ctype, cval)
     if ctype == 'Slot':
       assert len(cval) == 1, 'reference names must not include whitespace'

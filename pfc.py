@@ -52,13 +52,13 @@ def resolvevar(var, vars_, vpath):
     return var
   name = ' '.join(var[1])
   if name.lower() == 'true':
-    return ('literal', 'bool', True)
+    return ('literal', ('bool', True))
   if name.lower() == 'false':
-    return ('literal', 'bool', False)
+    return ('literal', ('bool', False))
   if name.lower() == 'null':
-    return ['literal', 'null', None] # not a tuple - this type is not final
+    return ('literal', ['null', None]) # not a tuple - this type is not final
   if name in constanttypes:
-    return ('literal', constanttypes[name], name)
+    return ('literal', (constanttypes[name], name))
   assert False, f'{var}, {vpath}, {paths}, {[vars_[path] for path in paths]}'
 
 def resolvevars(code, ivars, vvars):
