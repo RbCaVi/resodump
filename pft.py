@@ -60,62 +60,62 @@ class TokenString:
 # converts a string into tokens
 # <name> <number> <string>
 # ',' '=' '@' ':' '(' ')' '[' ']' '{' '}' '<' '>' '[[' ']]'
-def lexone(s):
-  s.stripcomments()
-  tokens = [
-    ',', '=', '@', ':',
-    '(', ')',
-    '[[', ']]',
-    '[', ']',
-    '{', '}',
-    '<', '>',
-  ]
-  for littoken in tokens:
-    if s.startswith(littoken):
-      token = s.maketoken(len(littoken))
-      token.set(littoken, littoken)
-      return token, s
-  if s.s[0] in '0123456789.-+':
-    numberregex = '[+-]?[0-9]*\\.?[0-9]*'
-    m = re.match(numberregex, s.s)
-    if m is not None:
-      n = m[0]
-      token = s.maketoken(len(n))
-      if n in ['+', '-']:
-        token.set('int', 0) # "special case"
-      elif n == ['+.', '-.', '.']:
-        token.set('float', 0.) # "special case"
-      elif '.' in n:
-        token.set('float', float(n))
-      else:
-        token.set('int', int(n))
-      return token, s
-  if s.s[0] == '"': # take that you only get double quoted strings
-    stringregex = '"([^"\\\\]|\\\\"|\\\\\\\\)*"' # if you want special characters, you get them yourself
-    m = re.match(stringregex, s.s)
-    if m is not None:
-      ss = m[0]
-      token = s.maketoken(len(ss))
-      ss = ss[1:-1]
-      ss = re.sub('\\\\(.)', '\\1', ss)
-      token.set('string', ss)
-      return token, s
-  nameregex = '[/a-zA-Z_][/a-zA-Z_0-9]*(\s+[/a-zA-Z_][/a-zA-Z_0-9]*)*'
-  m = re.match(nameregex, s.s)
-  if m is not None:
-    n = m[0]
-    token = s.maketoken(len(n))
-    n = tuple(n.split())
-    token.set('name', n)
-    return token, s
-  assert False, 'no match ): ' + repr(s[:20])
+littokens = [
+  ',', '=', '@', ':',
+  '(', ')',
+  '[[', ']]',
+  '[', ']',
+  '{', '}',
+  '<', '>',
+]
 
 def lex(s):
   s = TokenString(s)
-  tokens = []
   while s.stripcomments() != '':
-    token,s = lexone(s)
-    yield token
+    for littoken in littokens:
+      if s.startswith(littoken):
+        token = s.maketoken(len(littoken))
+        token.set(littoken, littoken)
+        yield token
+        break
+    else:
+      if s.s[0] in '0123456789.-+':
+        numberregex = '[+-]?[0-9]*\\.?[0-9]*'
+        m = re.match(numberregex, s.s)
+        if m is not None:
+          n = m[0]
+          token = s.maketoken(len(n))
+          if n in ['+', '-']:
+            token.set('int', 0) # "special case"
+          elif n == ['+.', '-.', '.']:
+            token.set('float', 0.) # "special case"
+          elif '.' in n:
+            token.set('float', float(n))
+          else:
+            token.set('int', int(n))
+          yield token
+          continue
+      if s.s[0] == '"': # take that you only get double quoted strings
+        stringregex = '"([^"\\\\]|\\\\"|\\\\\\\\)*"' # if you want special characters, you get them yourself
+        m = re.match(stringregex, s.s)
+        if m is not None:
+          ss = m[0]
+          token = s.maketoken(len(ss))
+          ss = ss[1:-1]
+          ss = re.sub('\\\\(.)', '\\1', ss)
+          token.set('string', ss)
+          yield token
+          continue
+      nameregex = '[/a-zA-Z_][/a-zA-Z_0-9]*(\s+[/a-zA-Z_][/a-zA-Z_0-9]*)*'
+      m = re.match(nameregex, s.s)
+      if m is not None:
+        n = m[0]
+        token = s.maketoken(len(n))
+        n = tuple(n.split())
+        token.set('name', n)
+        yield token
+        continue
+      assert False, 'no match ): ' + repr(s.s[:20])
 
 def pass1(tokens):
   # process @, [ ], [[ ]], < >
