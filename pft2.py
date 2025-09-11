@@ -13,6 +13,7 @@
 # <word> = [/a-zA-Z_][/a-zA-Z_0-9]*
 
 import re
+import collections
 
 class PftError(Exception):
   pass
@@ -193,6 +194,8 @@ def parseassign(tokens):
 if __name__ == '__main__':
   with open('l.pft') as f:
     s = f.read()
-  
+  tokens = collections.deque()
   for token in lex(s):
     print(token)
+    tokens.append(token)
+  print(parsestmts(tokens))
