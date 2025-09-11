@@ -14,6 +14,23 @@
 
 import re
 
+class PftError(Exception):
+  pass
+
+class PftParseError(PftError):
+  def __init__(self, token, message):
+    self.source = token.source
+    self.start = token.start
+    self.end = token.end
+    self.message = message
+
+class PftLexError(PftError):
+  def __init__(self, source, message):
+    self.source = source
+    self.start = self.source.consumed()
+    self.end = self.start + 1
+    self.message = message
+
 class Token:
   def __init__(self, kind, value, bounds):
     self.kind = kind
@@ -66,6 +83,9 @@ class TokenString:
   
   def __len__(self):
     return len(self.s)
+  
+  def consumed(self):
+    return len(self.original) - len(self.s)
 
 # first a lexer
 # converts a string into tokens
@@ -123,10 +143,56 @@ def lex(s):
         name = tuple(m[0].lower().split())
         yield Token(IDENT, name, bounds)
         continue
-      assert False, 'no match ): ' + repr(s.s[:20])
+      raise PftLexError(s, 'No matching token here')
+
+# tokens is a deque for all of these
+# i could have used some kind of peekable iterator
+# but nah i'd win
+# i could also write a reversed list class that pops from the start without O(n) time complexity
+
+def assertkind(token, kinds, message):
+  if token.kind not in kinds:
+    raise PftParseError(token, message)
+
+def parsestmts(tokens):
+  stmts = []
+  while len(tokens) > 0 and tokens[0].kind != '}':
+    stmts.append(parsestmt(tokens))
+  return stmts
+
+def parsestmt(tokens):
+  iout,vout = parseassign(tokens)
+  func,iin,vin = parsefunc(tokens)
+  subblocks = parsesubblocks(tokens)
+  return Stmt(func, iin, vin, iout, vout, subblocks)
+
+def parseassign(tokens):
+  assert len(tokens) >= 2 # needs a variable name and an equals sign
+  # check if this actually has either an impulse output (tokens[0] == '@') or an equals (tokens[1] == '=') or a comma (tokens[1] == ',')
+  # or check for tokens[1] != '(' and != '<'
+  # because otherwise it's a function without assigned variables
+  if not (tokens[0].kind == '@' or tokens[1].kind == ',' or tokens[1].kind == '='):
+    return (), () # this statement does not (explicitly) return any values
+  if tokens[1].kind in ['(', '<']: # the second token marks it as part of a function
+    return (), () # this statement does not (explicitly) return any values
+  iout = []
+  vout = []
+  while tokens[0].kind != '=':
+    if (var := tokens.popleft()).kind == '@':
+      vlist = iout
+      var = tokens.popleft()
+    else:
+      vlist = vout
+    assertkind(var, [IDENT], 'IDENT expected')
+    vlist.append(var)
+    # should i make commas optional? nah
+    if (delim := tokens.popleft()).kind == '=':
+      break
+    assertkind(delim, [','], '\',\' or \'=\' expected')
 
 if __name__ == '__main__':
   with open('l.pft') as f:
     s = f.read()
+  
   for token in lex(s):
     print(token)
