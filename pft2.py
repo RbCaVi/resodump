@@ -289,6 +289,22 @@ def parsesubblocks(tokens):
     assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
   return subblocks
 
+def dumpstmts(stmts):
+  return '\n'.join(dumpstmt(stmt) for stmt in stmts)
+
+def dumpstmt(stmt):
+  funcname,tag = stmt.func
+  dumped = ' '.join(funcname.name)
+  outputs = ['@' + ' '.join(i.value) for i in stmt.iout] + [' '.join(v.value) for v in stmt.vout]
+  if len(outputs) != 0:
+    dumped = ','.join(outputs) + ' = ' + dumped
+  if tag is not None:
+    pass
+  # todo: inputs
+  for label,substmts in stmt.subblocks:
+    dumped += '\n  ' + ' '.join(label.value) + ': {\n    ' + dumpstmts(substmts).replace('\n', '\n    ') + '\n  }'
+  return dumped
+
 if __name__ == '__main__':
   with open('l.pft') as f:
     s = f.read()
@@ -296,7 +312,8 @@ if __name__ == '__main__':
   for token in lex(s):
     tokens.append(token)
   try:
-    print(parsestmts(tokens))
+    print(stmts := parsestmts(tokens))
   except PftParseError:
     print([tokens[i] for i in range(9)])
     raise
+  print(dumpstmts(stmts))
