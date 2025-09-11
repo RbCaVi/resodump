@@ -151,6 +151,20 @@ def lex(s):
 # but nah i'd win
 # i could also write a reversed list class that pops from the start without O(n) time complexity
 
+class Stmt:
+  def __init__(self, func, iin, vin, iout, vout, subblocks):
+    self.func = func
+    self.iin = iin
+    self.vin = vin
+    self.iout = iout
+    self.vout = vout
+    self.subblocks = subblocks
+
+class FuncName:
+  def __init__(self, name, builtin):
+    self.name = name.value
+    self.builtin = builtin
+
 def assertkind(token, kinds, message):
   if token.kind not in kinds:
     raise PftParseError(token, message)
@@ -159,6 +173,7 @@ def parsestmts(tokens):
   stmts = []
   while len(tokens) > 0 and tokens[0].kind != '}':
     stmts.append(parsestmt(tokens))
+    print('statement')
   return stmts
 
 def parsestmt(tokens):
@@ -178,18 +193,68 @@ def parseassign(tokens):
     return (), () # this statement does not (explicitly) return any values
   iout = []
   vout = []
-  while tokens[0].kind != '=':
+  while True:
     if (var := tokens.popleft()).kind == '@':
       vlist = iout
       var = tokens.popleft()
     else:
       vlist = vout
-    assertkind(var, [IDENT], 'IDENT expected')
+    assertkind(var, [IDENT], 'Expected IDENT')
     vlist.append(var)
     # should i make commas optional? nah
     if (delim := tokens.popleft()).kind == '=':
       break
-    assertkind(delim, [','], '\',\' or \'=\' expected')
+    assertkind(delim, [','], 'Expected \',\' or \'=\'')
+  return iout, vout
+
+def parsefunc(tokens):
+  name = parsefuncname(tokens)
+  if (left := tokens.popleft()).kind == '<': # you only need one token in a tag right?
+    tag = tokens.popleft()
+    assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
+  else:
+    tag = None
+  func = name, tag
+  assertkind(tokens.popleft(), ['('], 'Expected \'(\' (begin argument list) or \'<\' (begin tag)')
+  iin = []
+  vin = []
+  if tokens[0].kind == ')': # empty arguments
+    tokens.popleft()
+    return func, (), ()
+  while True:
+    if tokens[0].kind == '@':
+      assertkind(var := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
+      iin.append(var)
+    else:
+      vin.append(parsevalue(tokens))
+    # should i make commas optional? nah
+    if (delim := tokens.popleft()).kind == ')':
+      break
+    assertkind(delim, [','], 'Expected \',\' or \')\' (end argument list)')
+    if tokens[0].kind == ')':
+      tokens.popleft()
+      break
+  return func, iin, vin
+
+def parsefuncname(tokens):
+  if (name := tokens.popleft()).kind == '[':
+    name = tokens.popleft()
+    assertkind(name, IDENT, 'Expected IDENT (function name)')
+    assertkind(tokens.popleft(), [']'], 'Expected \']\' (end user defined function name)')
+    return FuncName(name, False)
+  else:
+    assertkind(name, IDENT, 'Expected IDENT (function name)')
+    return FuncName(name, True)
+
+def parsesubblocks(tokens):
+  subblocks = []
+  while len(tokens) >= 2 and tokens[1].kind == ':':
+    assertkind(label := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
+    assertkind(tokens.popleft(), [':'], 'what') # i know this one is a colon because of the check above
+    assertkind(tokens.popleft(), ['{'], 'Expected \'{\'')
+    subblocks.append(parsestmts(tokens))
+    assertkind(tokens.popleft(), ['{'], 'Expected \'}\'')
+  return subblocks
 
 if __name__ == '__main__':
   with open('l.pft') as f:
@@ -198,4 +263,8 @@ if __name__ == '__main__':
   for token in lex(s):
     print(token)
     tokens.append(token)
-  print(parsestmts(tokens))
+  try:
+    print(parsestmts(tokens))
+  except PftParseError:
+    print([tokens[i] for i in range(15)])
+    raise
