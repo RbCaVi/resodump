@@ -144,7 +144,7 @@ def lex(s):
         continue
       m,bounds = s.match(nameregex)
       if m is not None:
-        name = tuple(m[0].lower().split())
+        name = tuple(m[0].split())
         yield Token(IDENT, name, bounds)
         continue
       raise PftLexError(s, 'No matching token here')
@@ -196,9 +196,9 @@ def parseassign(tokens):
   # or check for tokens[1] != '(' and != '<'
   # because otherwise it's a function without assigned variables
   if not (tokens[0].kind == '@' or tokens[1].kind == ',' or tokens[1].kind == '='):
-    return (), () # this statement does not (explicitly) return any values
+    return [], [] # this statement does not (explicitly) return any values
   if tokens[1].kind in ['(', '<']: # the second token marks it as part of a function
-    return (), () # this statement does not (explicitly) return any values
+    return [], [] # this statement does not (explicitly) return any values
   iout = []
   vout = []
   while True:
@@ -218,7 +218,7 @@ def parseassign(tokens):
 def parsefunc(tokens):
   name = parsefuncname(tokens)
   if (left := tokens.popleft()).kind == '<': # you only need one token in a tag right?
-    tag = tokens.popleft()
+    assertkind(tag := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
     assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
     left = tokens.popleft()
   else:
@@ -229,7 +229,7 @@ def parsefunc(tokens):
   vin = []
   if tokens[0].kind == ')': # empty arguments
     tokens.popleft()
-    return func, (), ()
+    return func, [], []
   while True:
     if tokens[0].kind == '@':
       assertkind(var := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
@@ -285,7 +285,7 @@ def parsesubblocks(tokens):
     assertkind(label := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
     assertkind(tokens.popleft(), [':'], 'what') # i know this one is a colon because of the check above
     assertkind(tokens.popleft(), ['{'], 'Expected \'{\' (begin subblock)')
-    subblocks.append(parsestmts(tokens))
+    subblocks.append((label, parsestmts(tokens)))
     assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
   return subblocks
 
