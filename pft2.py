@@ -296,15 +296,33 @@ def dumpstmts(stmts):
 def dumpstmt(stmt):
   funcname,tag = stmt.func
   dumped = ' '.join(funcname.name)
+  if not funcname.builtin:
+    dumped = '[' + dumped + ']'
   outputs = ['@' + ' '.join(i.value) for i in stmt.iout] + [' '.join(v.value) for v in stmt.vout]
   if len(outputs) != 0:
     dumped = ','.join(outputs) + ' = ' + dumped
   if tag is not None:
-    pass
-  # todo: inputs
+    dumped += ' <' + ' '.join(tag.value) + '>'
+  inputs = ['@' + ' '.join(i.value) for i in stmt.iin] + [dumpvalue(v) for v in stmt.vin]
+  dumped += ' (' + ', '.join(inputs) + ')'
   for label,substmts in stmt.subblocks:
     dumped += '\n  ' + ' '.join(label.value) + ': {\n    ' + dumpstmts(substmts).replace('\n', '\n    ') + '\n  }'
   return dumped
+
+def dumpvalue(value):
+  if value.kind == VAR:
+    return ' '.join(value.value.value)
+  if value.kind == REF:
+    return '[[' + ' '.join(value.value.value) + ']]'
+  if value.kind == FLOAT:
+    return str(value.value.value)
+  if value.kind == INT:
+    return str(value.value.value)
+  if value.kind == ARRAY:
+    return '[' + ', '.join([str(v.value) for v in value.value]) + ']'
+  if value.kind == STRING:
+    return '"' + value.value.value.replace('"', '\"').replace('\\', '\\\\') + '"'
+  print(value, value.kind)
 
 if __name__ == '__main__':
   with open('l.pft') as f:
