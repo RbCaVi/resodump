@@ -232,7 +232,8 @@ def parsefunc(tokens):
     return func, [], []
   while True:
     if tokens[0].kind == '@':
-      assertkind(var := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
+      tokens.popleft()
+      assertkind(var := tokens.popleft(), [IDENT], 'Expected IDENT (impulse input name)')
       iin.append(var)
     else:
       vin.append(parsevalue(tokens))
