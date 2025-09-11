@@ -105,6 +105,9 @@ INT = 'INT'
 FLOAT = 'FLOAT'
 STRING = 'STRING'
 IDENT = 'IDENT'
+VAR = 'VAR'
+REF = 'REF'
+ARRAY = 'ARRAY'
 
 numberregex = '[+-]?[0-9]*\\.?[0-9]*'
 stringregex = '"([^"\\\\]|\\\\"|\\\\\\\\)*"' # if you want special characters, you get them yourself # take that you only get double quoted strings
@@ -162,8 +165,14 @@ class Stmt:
 
 class FuncName:
   def __init__(self, name, builtin):
+    self.token = name
     self.name = name.value
     self.builtin = builtin
+
+class Value:
+  def __init__(self, value, kind):
+    self.value = value
+    self.kind = kind
 
 def assertkind(token, kinds, message):
   if token.kind not in kinds:
@@ -173,7 +182,6 @@ def parsestmts(tokens):
   stmts = []
   while len(tokens) > 0 and tokens[0].kind != '}':
     stmts.append(parsestmt(tokens))
-    print('statement')
   return stmts
 
 def parsestmt(tokens):
@@ -199,7 +207,7 @@ def parseassign(tokens):
       var = tokens.popleft()
     else:
       vlist = vout
-    assertkind(var, [IDENT], 'Expected IDENT')
+    assertkind(var, [IDENT], 'Expected IDENT (assigned variable)')
     vlist.append(var)
     # should i make commas optional? nah
     if (delim := tokens.popleft()).kind == '=':
@@ -212,10 +220,11 @@ def parsefunc(tokens):
   if (left := tokens.popleft()).kind == '<': # you only need one token in a tag right?
     tag = tokens.popleft()
     assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
+    left = tokens.popleft()
   else:
     tag = None
   func = name, tag
-  assertkind(tokens.popleft(), ['('], 'Expected \'(\' (begin argument list) or \'<\' (begin tag)')
+  assertkind(left, ['('], 'Expected \'(\' (begin argument list) or \'<\' (begin tag)')
   iin = []
   vin = []
   if tokens[0].kind == ')': # empty arguments
@@ -239,21 +248,45 @@ def parsefunc(tokens):
 def parsefuncname(tokens):
   if (name := tokens.popleft()).kind == '[':
     name = tokens.popleft()
-    assertkind(name, IDENT, 'Expected IDENT (function name)')
+    assertkind(name, IDENT, 'Expected IDENT (user defined function name)')
     assertkind(tokens.popleft(), [']'], 'Expected \']\' (end user defined function name)')
     return FuncName(name, False)
   else:
-    assertkind(name, IDENT, 'Expected IDENT (function name)')
+    assertkind(name, IDENT, 'Expected IDENT (builtin function name)')
     return FuncName(name, True)
+
+def parsevalue(tokens):
+  assertkind(value := tokens.popleft(), [INT, FLOAT, STRING, IDENT, '[', '[['], 'Expected INT, FLOAT, STRING, IDENT (variable name), \'[\' (begin array), or \'[[\' (begin reference)')
+  if value.kind in [INT, FLOAT, STRING]:
+    return Value(value, value.kind)
+  if value.kind == IDENT:
+    return Value(value, VAR)
+  if value.kind == '[':
+    values = []
+    while True:
+      assertkind(value := tokens.popleft(), [INT, FLOAT], 'Expected INT or FLOAT')
+      values.append(value)
+      # should i make commas optional? nah
+      if (delim := tokens.popleft()).kind == ']':
+        break
+      assertkind(delim, [','], 'Expected \',\' or \']\' (end array)')
+      if tokens[0].kind == ']':
+        tokens.popleft()
+        break
+    return Value(values, ARRAY)
+  if value.kind == '[[':
+    ref = tokens.popleft()
+    assertkind(tokens.popleft(), [']]'], 'Expected \']]\' (end reference)')
+    return Value(ref, REF)
 
 def parsesubblocks(tokens):
   subblocks = []
   while len(tokens) >= 2 and tokens[1].kind == ':':
     assertkind(label := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
     assertkind(tokens.popleft(), [':'], 'what') # i know this one is a colon because of the check above
-    assertkind(tokens.popleft(), ['{'], 'Expected \'{\'')
+    assertkind(tokens.popleft(), ['{'], 'Expected \'{\' (begin subblock)')
     subblocks.append(parsestmts(tokens))
-    assertkind(tokens.popleft(), ['{'], 'Expected \'}\'')
+    assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
   return subblocks
 
 if __name__ == '__main__':
@@ -261,10 +294,9 @@ if __name__ == '__main__':
     s = f.read()
   tokens = collections.deque()
   for token in lex(s):
-    print(token)
     tokens.append(token)
   try:
     print(parsestmts(tokens))
   except PftParseError:
-    print([tokens[i] for i in range(15)])
+    print([tokens[i] for i in range(9)])
     raise
