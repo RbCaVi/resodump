@@ -18,7 +18,7 @@ class Token:
   def __init__(self, kind, value, bounds):
     self.kind = kind
     self.value = value
-    self.start,self.end = bounds
+    self.source,self.start,self.end = bounds
   
   def __repr__(self):
     return f'Token({repr(self.kind)}, {repr(self.value)})'
@@ -36,7 +36,7 @@ class TokenString:
     start = len(self.original) - len(self.s)
     end = start + l
     self.s = self.s[l:]
-    return s, (start, end)
+    return s, (self, start, end)
   
   def match(self, pattern):
     m = re.match(pattern, self.s)
@@ -46,7 +46,7 @@ class TokenString:
     start = len(self.original) - len(self.s)
     end = start + l
     self.s = self.s[l:]
-    return m, (start, end)
+    return m, (self, start, end)
 
   def strip(self):
     # strips spaces and single line // and multi line /* */ comments
