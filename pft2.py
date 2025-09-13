@@ -188,6 +188,7 @@ def assertkind(token, kinds, message):
 #          literal = int | float | string
 #    block = (ident | int) ':' '{' stmts '}'
 
+# rvalue types
 VAR = 'VAR'
 REF = 'REF'
 INTARRAY = 'INTARRAY'
@@ -206,8 +207,14 @@ class ParseStmt:
     tokens = TokenRange(tokens)
     self.assign = ParseAssign(tokens)
     self.func = ParseFunc(tokens)
-    self.blocks = parsesubblocks(tokens)
+    self.subblocks = parsesubblocks(tokens)
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    dumped = self.assign.dump() + self.func.dump()
+    for subblock in self.subblocks:
+      dumped += '\n  ' + subblock.dump().replace('\n', '\n  ')
+    return dumped
 
 class ParseAssign:
   def __init__(self, tokens):
@@ -233,21 +240,32 @@ class ParseAssign:
         break
       assertkind(delim, [','], 'Expected \',\' or \'=\'')
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    if len(self.iout) + len(self.vout) == 0:
+      return ''
+    return ','.join([i.dump() for i in self.iout] + [v.dump() for v in self.vout]) + ' = '
 
 class ParseLImpulse:
   def __init__(self, tokens):
     tokens = TokenRange(tokens)
     assertkind(tokens.popleft(), ['@'], 'what') # checked by ParseAssign
     assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
-    self.name = name
+    self.name = name.value
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    return '@' + ' '.join(self.name)
 
 class ParseLVar:
   def __init__(self, tokens):
     tokens = TokenRange(tokens)
     assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
-    self.name = name
+    self.name = name.value
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    return ' '.join(self.name)
 
 class ParseFunc:
   def __init__(self, tokens):
@@ -276,6 +294,13 @@ class ParseFunc:
           tokens.popleft()
           break
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    if self.tag is not None:
+      tag = self.tag.dump()
+    else:
+      tag = ''
+    return self.name.dump() + tag + ' (' + ', '.join([i.dump() for i in self.iin] + [v.dump() for v in self.vin]) + ')'
 
 class ParseFuncName:
   def __init__(self, tokens):
@@ -283,32 +308,44 @@ class ParseFuncName:
     if tokens[0].kind == '[':
       assertkind(tokens.popleft(), ['['], 'what') # checked
       assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (user defined function name)')
-      self.name = name
+      self.name = name.value
       self.builtin = False
       assertkind(tokens.popleft(), [']'], 'Expected \']\' (end user defined function name)')
     else:
       assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (builtin function name) or \'[\' (begin user defined function name)')
-      self.name = name
+      self.name = name.value
       self.builtin = True
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    if self.builtin:
+      return ' '.join(self.name)
+    else:
+      return '[' + ' '.join(self.name) + ']'
 
 class ParseTag:
   def __init__(self, tokens):
     tokens = TokenRange(tokens)
     assertkind(tokens.popleft(), ['<'], 'what') # checked
     assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (tag)')
-    self.name = name
+    self.name = name.value
     self.builtin = False
     assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    return ' <' + ' '.join(self.name) + '>'
 
 class ParseRImpulse:
   def __init__(self, tokens):
     tokens = TokenRange(tokens)
     assertkind(tokens.popleft(), ['@'], 'what') # checked by ParseFunc
     assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
-    self.name = name
+    self.name = name.value
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    return '@' + ' '.join(self.name)
 
 class ParseRValue:
   def __init__(self, tokens):
@@ -342,6 +379,22 @@ class ParseRValue:
       self.value = ref.value
       self.kind = REF
     self.tokens = tokens.tokens
+  
+  def dump(self):
+    if self.kind == INT:
+      return str(self.value)
+    if self.kind == FLOAT:
+      return str(self.value)
+    if self.kind == STRING:
+      return '"' + self.value.replace('"', '\"').replace('\\', '\\\\') + '"'
+    if self.kind == VAR:
+      return ' '.join(self.value)
+    if self.kind == FLOATARRAY:
+      return '[' + ', '.join([str(n) for n in self.value]) + ']'
+    if self.kind == INTARRAY:
+      return '[' + ', '.join([str(n) for n in self.value]) + ']'
+    if self.kind == REF:
+      return '[[' + ' '.join(self.value) + ']]'
 
 def parsesubblocks(tokens):
   subblocks = []
@@ -359,42 +412,16 @@ class ParseSubBlock:
     self.stmts = parsestmts(tokens)
     assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
     self.tokens = tokens.tokens
-
-
+  
+  def dump(self):
+    if isinstance(self.label, tuple): # identifier
+      label = ' '.join(self.label)
+    else: # integer
+      label = str(self.label)
+    return label + ': {\n  ' + dumpstmts(self.stmts).replace('\n', '\n  ') + '\n}'
 
 def dumpstmts(stmts):
-  return '\n'.join(dumpstmt(stmt) for stmt in stmts)
-
-def dumpstmt(stmt):
-  funcname,tag = stmt.func
-  dumped = ' '.join(funcname.name)
-  if not funcname.builtin:
-    dumped = '[' + dumped + ']'
-  outputs = ['@' + ' '.join(i.value) for i in stmt.iout] + [' '.join(v.value) for v in stmt.vout]
-  if len(outputs) != 0:
-    dumped = ','.join(outputs) + ' = ' + dumped
-  if tag is not None:
-    dumped += ' <' + ' '.join(tag.value) + '>'
-  inputs = ['@' + ' '.join(i.value) for i in stmt.iin] + [dumpvalue(v) for v in stmt.vin]
-  dumped += ' (' + ', '.join(inputs) + ')'
-  for label,substmts in stmt.subblocks:
-    dumped += '\n  ' + ' '.join(label.value) + ': {\n    ' + dumpstmts(substmts).replace('\n', '\n    ') + '\n  }'
-  return dumped
-
-def dumpvalue(value):
-  if value.kind == VAR:
-    return ' '.join(value.value.value)
-  if value.kind == REF:
-    return '[[' + ' '.join(value.value.value) + ']]'
-  if value.kind == FLOAT:
-    return str(value.value.value)
-  if value.kind == INT:
-    return str(value.value.value)
-  if value.kind == ARRAY:
-    return '[' + ', '.join([str(v.value) for v in value.value]) + ']'
-  if value.kind == STRING:
-    return '"' + value.value.value.replace('"', '\"').replace('\\', '\\\\') + '"'
-  print(value, value.kind)
+  return '\n'.join(stmt.dump() for stmt in stmts)
 
 if __name__ == '__main__':
   with open('l.pft') as f:
