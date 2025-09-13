@@ -105,9 +105,6 @@ INT = 'INT'
 FLOAT = 'FLOAT'
 STRING = 'STRING'
 IDENT = 'IDENT'
-VAR = 'VAR'
-REF = 'REF'
-ARRAY = 'ARRAY'
 
 numberregex = '[+-]?[0-9]*\\.?[0-9]*'
 stringregex = '"([^"\\\\]|\\\\"|\\\\\\\\)*"' # if you want special characters, you get them yourself # take that you only get double quoted strings
@@ -154,141 +151,216 @@ def lex(s):
 # but nah i'd win
 # i could also write a reversed list class that pops from the start without O(n) time complexity
 
-class Stmt:
-  def __init__(self, func, iin, vin, iout, vout, subblocks):
-    self.func = func
-    self.iin = iin
-    self.vin = vin
-    self.iout = iout
-    self.vout = vout
-    self.subblocks = subblocks
-
-class FuncName:
-  def __init__(self, name, builtin):
-    self.token = name
-    self.name = name.value
-    self.builtin = builtin
-
-class Value:
-  def __init__(self, value, kind):
-    self.value = value
-    self.kind = kind
+# not sure what to call this
+# wraps a deque or another TokenRange
+# and saves all tokens popped through this one
+# so i can get better error messages <3
+class TokenRange:
+  def __init__(self, source):
+    self.source = source
+    self.tokens = []
+  
+  def popleft(self):
+    token = self.source.popleft()
+    self.tokens.append(token)
+    return token
+  
+  def __getitem__(self, i):
+    return self.source[i]
+  
+  def __len__(self):
+    return len(self.source)
 
 def assertkind(token, kinds, message):
   if token.kind not in kinds:
     raise PftParseError(token, message)
 
+# hierarchy
+# stmts = stmt*
+#   stmt = assign? func block*
+#    assign = value (',' lvalue)*
+#      lvalue = '@' ident | ident
+#    func = funcname tag? '(' args ')'
+#      funcname = ident | '[' ident ']'
+#      tag = '<' ident '>'
+#      args = rvalue (',' rvalue)*
+#        rvalue = literal | ident | '@' ident
+#          literal = int | float | string
+#    block = (ident | int) ':' '{' stmts '}'
+
+VAR = 'VAR'
+REF = 'REF'
+INTARRAY = 'INTARRAY'
+FLOATARRAY = 'FLOATARRAY'
+
 def parsestmts(tokens):
+  # literally just parse multiple statements in a row
+  # so i don't need to save a list of tokens
   stmts = []
-  while len(tokens) > 0 and tokens[0].kind != '}':
-    stmts.append(parsestmt(tokens))
+  while len(tokens) > 0 and tokens[0].kind != '}': # check for eof and end of block
+    stmts.append(ParseStmt(tokens))
   return stmts
 
-def parsestmt(tokens):
-  iout,vout = parseassign(tokens)
-  func,iin,vin = parsefunc(tokens)
-  subblocks = parsesubblocks(tokens)
-  return Stmt(func, iin, vin, iout, vout, subblocks)
+class ParseStmt:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    self.assign = ParseAssign(tokens)
+    self.func = ParseFunc(tokens)
+    self.blocks = parsesubblocks(tokens)
+    self.tokens = tokens.tokens
 
-def parseassign(tokens):
-  assert len(tokens) >= 2 # needs a variable name and an equals sign
-  # check if this actually has either an impulse output (tokens[0] == '@') or an equals (tokens[1] == '=') or a comma (tokens[1] == ',')
-  # or check for tokens[1] != '(' and != '<'
-  # because otherwise it's a function without assigned variables
-  if not (tokens[0].kind == '@' or tokens[1].kind == ',' or tokens[1].kind == '='):
-    return [], [] # this statement does not (explicitly) return any values
-  if tokens[1].kind in ['(', '<']: # the second token marks it as part of a function
-    return [], [] # this statement does not (explicitly) return any values
-  iout = []
-  vout = []
-  while True:
-    if (var := tokens.popleft()).kind == '@':
-      vlist = iout
-      var = tokens.popleft()
-    else:
-      vlist = vout
-    assertkind(var, [IDENT], 'Expected IDENT (assigned variable)')
-    vlist.append(var)
-    # should i make commas optional? nah
-    if (delim := tokens.popleft()).kind == '=':
-      break
-    assertkind(delim, [','], 'Expected \',\' or \'=\'')
-  return iout, vout
-
-def parsefunc(tokens):
-  name = parsefuncname(tokens)
-  if (left := tokens.popleft()).kind == '<': # you only need one token in a tag right?
-    assertkind(tag := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
-    assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
-    left = tokens.popleft()
-  else:
-    tag = None
-  func = name, tag
-  assertkind(left, ['('], 'Expected \'(\' (begin argument list) or \'<\' (begin tag)')
-  iin = []
-  vin = []
-  if tokens[0].kind == ')': # empty arguments
-    tokens.popleft()
-    return func, [], []
-  while True:
-    if tokens[0].kind == '@':
-      tokens.popleft()
-      assertkind(var := tokens.popleft(), [IDENT], 'Expected IDENT (impulse input name)')
-      iin.append(var)
-    else:
-      vin.append(parsevalue(tokens))
-    # should i make commas optional? nah
-    if (delim := tokens.popleft()).kind == ')':
-      break
-    assertkind(delim, [','], 'Expected \',\' or \')\' (end argument list)')
-    if tokens[0].kind == ')':
-      tokens.popleft()
-      break
-  return func, iin, vin
-
-def parsefuncname(tokens):
-  if (name := tokens.popleft()).kind == '[':
-    name = tokens.popleft()
-    assertkind(name, IDENT, 'Expected IDENT (user defined function name)')
-    assertkind(tokens.popleft(), [']'], 'Expected \']\' (end user defined function name)')
-    return FuncName(name, False)
-  else:
-    assertkind(name, IDENT, 'Expected IDENT (builtin function name)')
-    return FuncName(name, True)
-
-def parsevalue(tokens):
-  assertkind(value := tokens.popleft(), [INT, FLOAT, STRING, IDENT, '[', '[['], 'Expected INT, FLOAT, STRING, IDENT (variable name), \'[\' (begin array), or \'[[\' (begin reference)')
-  if value.kind in [INT, FLOAT, STRING]:
-    return Value(value, value.kind)
-  if value.kind == IDENT:
-    return Value(value, VAR)
-  if value.kind == '[':
-    values = []
+class ParseAssign:
+  def __init__(self, tokens):
+    self.iout = []
+    self.vout = []
+    self.tokens = []
+    assert len(tokens) >= 2 # needs a variable name and an equals sign
+    # check if this actually has either an impulse output (tokens[0] == '@') or an equals (tokens[1] == '=') or a comma (tokens[1] == ',')
+    # or check for tokens[1] != '(' and != '<'
+    # because otherwise it's a function without assigned variables
+    if not (tokens[0].kind == '@' or tokens[1].kind == ',' or tokens[1].kind == '='): # update if `lvalue` changes
+      return # this statement does not (explicitly) return any values (it may implicitly return an impulse and/or ignored values)
+    if tokens[1].kind in ['(', '<']: # the second token marks it as part of a function # update if `func` changes
+      return # this statement does not (explicitly) return any values (it may implicitly return an impulse and/or ignored values)
+    tokens = TokenRange(tokens)
     while True:
-      assertkind(value := tokens.popleft(), [INT, FLOAT], 'Expected INT or FLOAT')
-      values.append(value)
+      if tokens[0].kind == '@':
+        self.iout.append(ParseLImpulse(tokens))
+      else:
+        self.vout.append(ParseLVar(tokens))
       # should i make commas optional? nah
-      if (delim := tokens.popleft()).kind == ']':
+      if (delim := tokens.popleft()).kind == '=':
         break
-      assertkind(delim, [','], 'Expected \',\' or \']\' (end array)')
-      if tokens[0].kind == ']':
-        tokens.popleft()
-        break
-    return Value(values, ARRAY)
-  if value.kind == '[[':
-    ref = tokens.popleft()
-    assertkind(tokens.popleft(), [']]'], 'Expected \']]\' (end reference)')
-    return Value(ref, REF)
+      assertkind(delim, [','], 'Expected \',\' or \'=\'')
+    self.tokens = tokens.tokens
+
+class ParseLImpulse:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(tokens.popleft(), ['@'], 'what') # checked by ParseAssign
+    assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
+    self.name = name
+    self.tokens = tokens.tokens
+
+class ParseLVar:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
+    self.name = name
+    self.tokens = tokens.tokens
+
+class ParseFunc:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    self.name = ParseFuncName(tokens)
+    if tokens[0].kind == '<':
+      self.tag = ParseTag(tokens)
+    else:
+      self.tag = None
+    assertkind(tokens.popleft(), ['('], 'Expected \'(\' (begin argument list) or \'<\' (begin tag)')
+    self.iin = []
+    self.vin = []
+    if tokens[0].kind == ')': # empty arguments
+      tokens.popleft()
+    else:
+      while True:
+        if tokens[0].kind == '@':
+          self.iin.append(ParseRImpulse(tokens))
+        else:
+          self.vin.append(ParseRValue(tokens))
+        # should i make commas optional? nah
+        if (delim := tokens.popleft()).kind == ')':
+          break
+        assertkind(delim, [','], 'Expected \',\' or \')\' (end argument list)')
+        if tokens[0].kind == ')': # allow trailing comma in argument list <3
+          tokens.popleft()
+          break
+    self.tokens = tokens.tokens
+
+class ParseFuncName:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    if tokens[0].kind == '[':
+      assertkind(tokens.popleft(), ['['], 'what') # checked
+      assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (user defined function name)')
+      self.name = name
+      self.builtin = False
+      assertkind(tokens.popleft(), [']'], 'Expected \']\' (end user defined function name)')
+    else:
+      assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (builtin function name) or \'[\' (begin user defined function name)')
+      self.name = name
+      self.builtin = True
+    self.tokens = tokens.tokens
+
+class ParseTag:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(tokens.popleft(), ['<'], 'what') # checked
+    assertkind(name := tokens.popleft(), IDENT, 'Expected IDENT (tag)')
+    self.name = name
+    self.builtin = False
+    assertkind(tokens.popleft(), ['>'], 'Expected \'>\' (end tag)')
+    self.tokens = tokens.tokens
+
+class ParseRImpulse:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(tokens.popleft(), ['@'], 'what') # checked by ParseFunc
+    assertkind(name := tokens.popleft(), [IDENT], 'Expected IDENT (impulse name)')
+    self.name = name
+    self.tokens = tokens.tokens
+
+class ParseRValue:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(value := tokens.popleft(), [INT, FLOAT, STRING, IDENT, '[', '[['], 'Expected INT, FLOAT, STRING, IDENT (variable name), \'[\' (begin array), or \'[[\' (begin reference)')
+    if value.kind in [INT, FLOAT, STRING]:
+      self.value = value.value
+      self.kind = value.kind
+    elif value.kind == IDENT:
+      self.value = value.value
+      self.kind = VAR
+    if value.kind == '[':
+      values = []
+      isfloat = False
+      while True:
+        assertkind(value := tokens.popleft(), [INT, FLOAT], 'Expected INT or FLOAT (array element)')
+        isfloat |= value.kind == FLOAT
+        values.append(value.value)
+        # should i make commas optional? nah
+        if (delim := tokens.popleft()).kind == ']':
+          break
+        assertkind(delim, [','], 'Expected \',\' or \']\' (end array)')
+        if tokens[0].kind == ']': # trailing comma is allowed in array literal
+          tokens.popleft()
+          break
+      self.value = values
+      self.kind = FLOATARRAY if isfloat else INTARRAY
+    if value.kind == '[[':
+      assertkind(ref := tokens.popleft(), [IDENT], 'Expected IDENT (reference target)')
+      assertkind(tokens.popleft(), [']]'], 'Expected \']]\' (end reference)')
+      self.value = ref.value
+      self.kind = REF
+    self.tokens = tokens.tokens
 
 def parsesubblocks(tokens):
   subblocks = []
-  while len(tokens) >= 2 and tokens[1].kind == ':':
-    assertkind(label := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
-    assertkind(tokens.popleft(), [':'], 'what') # i know this one is a colon because of the check above
-    assertkind(tokens.popleft(), ['{'], 'Expected \'{\' (begin subblock)')
-    subblocks.append((label, parsestmts(tokens)))
-    assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
+  while len(tokens) >= 2 and tokens[1].kind == ':': # check if there's a block marker
+    subblocks.append(ParseSubBlock(tokens))
   return subblocks
+
+class ParseSubBlock:
+  def __init__(self, tokens):
+    tokens = TokenRange(tokens)
+    assertkind(label := tokens.popleft(), [INT, IDENT], 'Expected INT or IDENT')
+    assertkind(tokens.popleft(), [':'], 'what') # checked in parsesubblocks
+    assertkind(tokens.popleft(), ['{'], 'Expected \'{\' (begin subblock)')
+    self.label = label.value
+    self.stmts = parsestmts(tokens)
+    assertkind(tokens.popleft(), ['}'], 'Expected \'}\' (end subblock)')
+    self.tokens = tokens.tokens
+
+
 
 def dumpstmts(stmts):
   return '\n'.join(dumpstmt(stmt) for stmt in stmts)
