@@ -423,6 +423,10 @@ class ParseSubBlock:
 def dumpstmts(stmts):
   return '\n'.join(stmt.dump() for stmt in stmts)
 
+# full lexing and parsing
+def parse(s):
+  return parsestmts(collections.deque(lex(s)))
+
 if __name__ == '__main__':
   with open('l.pft') as f:
     s = f.read()
