@@ -8,7 +8,17 @@
 # i'm trying to make better diagnostics this time though
 # like showing where a type error came from instead of just saying there's a type error
 
-
+class CompileStmt:
+  def __init__(self, stmt):
+    # assign basic properties
+    self.iin
+    self.vin
+    self.iout
+    self.vout
+    self.func # name, is builtin, tag (generic)
+    self.subblocks
+    # check each of the four connection sets that they are either empty or matching size with the definition
+    # also the subblock names
 
 if __name__ == '__main__':
   import pft2
