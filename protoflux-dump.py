@@ -136,7 +136,7 @@ for name in sorted({name for _,_,_,name in typedatas}):
       print(' ', path, typ)
 
 lambda x: len(x[0].GetGenericArguments()) != 0 and x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']
-def filtered(f):
+def filtered(f, typedatas = typedatas):
   typedatas2 = [x for x in typedatas if f(x)]
   for name in sorted({name for _,_,_,name in typedatas2}):
     print(name)
