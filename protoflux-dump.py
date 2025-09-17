@@ -74,20 +74,20 @@ typedatas = [(
   t,
   metadata := NodeMetadataHelper.GetMetadata(t),
   nullconcat('Root/', getoptionalname(firstornone(t.GetCustomAttributes(NodeCategoryAttribute, True)))) or 'Root',
-  StringHelper.BeautifyName(metadata.Name or metadata.Overload or t.Name) # the metadata.Overload field is (right now) always overshadowed by metadata.Name
+  metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name) # the metadata.Overload field is (right now) always overshadowed by metadata.Name
 ) for t in types]
 
-key1 = lambda x: x[1].Overload or x[3] # original code
-key2 = lambda x: x[3] # something else idk
-key = key1
-gs = [(k, [*v]) for k,v in itertools.groupby(sorted(typedatas, key = key), key)]
+#key1 = lambda x: x[1].Overload or x[3] # original code
+#key2 = lambda x: x[3] # something else idk
+#key = key1
+#gs = [(k, [*v]) for k,v in itertools.groupby(sorted(typedatas, key = key), key)]
 
-metadatas = [x[1] for x in typedatas]
+#metadatas = [x[1] for x in typedatas]
 
 #{j for j in {x[3] for x in typedatas} if len({y[2] for y in typedatas if y[3] == j}) > 1} # trying to check for nodes with the same name under different paths
 
 for typ,meta,path,name in typedatas:
-  print(typ)
+  print(typ, name)
   # input impulses
   for x in meta.FixedOperations:
     print('  meta.FixedOperations', x)
@@ -108,25 +108,6 @@ for typ,meta,path,name in typedatas:
     print('  meta.FixedOutputs', x)
   for x in meta.DynamicOutputs:
     print('  meta.DynamicOutputs', x)
-  
-  
-  
-  '''
-  
-                    var inputElements = node.Metadata.FixedOperations
-                        .Concat(node.Metadata.DynamicOperations
-                            .SelectMany(dynOp => new IElementMetadata[] { dynOp, new InputListEndMetadata(dynOp.Index, dynOp.Name, GetOperationName(dynOp.SupportsSync, dynOp.SupportsAsync)) }))
-                        .Concat(node.Metadata.FixedInputs)
-                        .Concat(node.Metadata.DynamicInputs
-                            .SelectMany(dynIn => new IElementMetadata[] { dynIn, new InputListEndMetadata(dynIn.Index, dynIn.Name, dynIn.Field.FieldType.IsConstructedGenericType ? dynIn.Field.FieldType.GenericTypeArguments[0].Name : dynIn.Field.FieldType.Name) }));
-
-                    var outputElements = node.Metadata.FixedImpulses
-                        .Concat(node.Metadata.DynamicImpulses
-                            .SelectMany(dynOp => new IElementMetadata[] { dynOp, new OutputListEndMetadata(dynOp.Index, dynOp.Name, dynOp.Type?.ToString() ?? "null") }))
-                        .Concat(node.Metadata.FixedOutputs)
-                        .Concat(node.Metadata.DynamicOutputs
-                            .SelectMany(dynOut => new IElementMetadata[] { dynOut, new OutputListEndMetadata(dynOut.Index, dynOut.Name, dynOut.TypeConstraint?.Name ?? "*") }));
-'''
 
 for name in sorted({name for _,_,_,name in typedatas}):
   print(name)
@@ -146,6 +127,7 @@ def filtered(f, typedatas = typedatas):
 
 # if .FixedInputCount == .FixedArgumentCount, then the node doesn't have any impulse inputs or outputs
 # .FixedArgumentCount is ones that are not marked conditional
+# not sure why this matters
 
 # :? and ?? have some (but not all) inputs non conditional
 
@@ -172,7 +154,7 @@ def filtered(f, typedatas = typedatas):
 #   Ref As Variable
 #   User Ref As Variable
 
-typedatas = [x for x in typedatas and x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']]
+typedatas = [x for x in typedatas if x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']]
 
 # generics
 generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
@@ -213,7 +195,7 @@ rename = {
   'Link': '-- Link',
   
   # no.
-  'Nest': '-- Nest'
+  'Nest': '-- Nest',
   
   '1/(π/2)': 'Inverse Half Pi',
   '1/(π/4)': 'Inverse Quarter Pi',
@@ -353,7 +335,7 @@ def getsignature(nodedata):
   return (FixedOperationsCount, DynamicOperationsCount, FixedInputsCount, DynamicInputsCount, FixedImpulsesCount, DynamicImpulsesCount, FixedOutputsCount, DynamicOutputsCount, FixedReferencesCount, FixedGlobalRefsCount, DynamicGlobalRefsCount)
 
 def filternodes(nodedatas):
-  lists = [[] for _ in range(types)]
+  lists = [[] for _ in range(typescount)]
   for nodedata in nodedatas:
     lists[filternode(nodedata)].append(nodedata)
   print([len(l) for l in lists])
@@ -366,7 +348,7 @@ def signatures(nodedatas):
 
 def filternode(nodedata):
   signature = getsignature(nodedata)
-  # the bracketed numbers are the counts as of uh 9/17/2025 resonite
+  # the bracketed numbers are the counts as of 2025.9.12.1173 resonite
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
     return 1 # simple data nodes [2535, 143]
@@ -388,9 +370,9 @@ def filternode(nodedata):
     return 9 # dynamic output [0, 3]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
     return 10 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [1, 7]
-  return 0 # random stuff [17, 4]
+  return 0 # random stuff [15, 4]
 
-types = 11
+typescount = 11
 
 concretesplit = filternodes(concrete)
 generic1split = filternodes(generic1)
