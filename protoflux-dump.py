@@ -172,8 +172,10 @@ def filtered(f, typedatas = typedatas):
 #   Ref As Variable
 #   User Ref As Variable
 
+typedatas = [x for x in typedatas and x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']]
+
 # generics
-generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0 and x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']]
+generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
 generic1 = [x for x in generic if len(x[0].GetGenericArguments()) == 1]
 generic2 = [x for x in generic if len(x[0].GetGenericArguments()) == 2 and x[0].GetGenericArguments()[0].Name != 'C'] # because there are generic versions of some nodes that take a context type as the first parameter # this is literally spherical harmonics evaluate and object cast
 # 2 generic parameters is the max for non proxy nodes (proxy nodes go up to like 7)
