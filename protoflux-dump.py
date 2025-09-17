@@ -212,6 +212,9 @@ rename = {
   # two references
   'Link': '-- Link',
   
+  # no.
+  'Nest': '-- Nest'
+  
   '1/(π/2)': 'Inverse Half Pi',
   '1/(π/4)': 'Inverse Quarter Pi',
   '1/d T': 'Inverse dT',
