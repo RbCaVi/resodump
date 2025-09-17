@@ -256,6 +256,9 @@ rename = {
   '√n': 'Square Root',
   'N√x': 'Nth Root',
   '+1': 'Plus One',
+  ' 1': 'Minus One',
+  '-N': 'Negate',
+  '1 N': 'One Minus',
   
   'Ease  In/ Out Rebound': 'Ease In Out Rebound',
   'Ease In/ Out Bounce': 'Ease In Out Bounce',
