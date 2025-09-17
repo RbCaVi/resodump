@@ -320,3 +320,77 @@ rename = {
 
 concrete = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in concrete]
 generic1 = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in generic1]
+
+# what are my groups?
+# simple nodes - no generics - no references - no dynamics - any number of values
+#   non impulse
+#   max one impulse
+# non simple nodes </3
+
+class TestEq:
+  def __init__(self, test):
+    self.test = test
+  
+  def __eq__(self, other):
+    return self.test(other)
+
+Any = TestEq(lambda x: True)
+Ge = lambda v: TestEq(lambda x: x >= v)
+
+def getsignature(nodedata):
+  typ,meta,path,name = nodedata
+  FixedOperationsCount = len(meta.FixedOperations)
+  DynamicOperationsCount = len(meta.DynamicOperations)
+  FixedInputsCount = len(meta.FixedInputs)
+  DynamicInputsCount = len(meta.DynamicInputs)
+  FixedImpulsesCount = len(meta.FixedImpulses)
+  DynamicImpulsesCount = len(meta.DynamicImpulses)
+  FixedOutputsCount = len(meta.FixedOutputs)
+  DynamicOutputsCount = len(meta.DynamicOutputs)
+  FixedReferencesCount = len(meta.FixedReferences)
+  FixedGlobalRefsCount = len(meta.FixedGlobalRefs)
+  DynamicGlobalRefsCount = len(meta.DynamicGlobalRefs)
+  return (FixedOperationsCount, DynamicOperationsCount, FixedInputsCount, DynamicInputsCount, FixedImpulsesCount, DynamicImpulsesCount, FixedOutputsCount, DynamicOutputsCount, FixedReferencesCount, FixedGlobalRefsCount, DynamicGlobalRefsCount)
+
+def filternodes(nodedatas):
+  lists = [[] for _ in range(types)]
+  for nodedata in nodedatas:
+    lists[filternode(nodedata)].append(nodedata)
+  print([len(l) for l in lists])
+  return lists
+
+def signatures(nodedatas):
+  for nodedata in nodedatas:
+    typ,meta,path,name = nodedata
+    print(getsignature(nodedata), name, typ)
+
+def filternode(nodedata):
+  signature = getsignature(nodedata)
+  # the bracketed numbers are the counts as of uh 9/17/2025 resonite
+  # of [concrete, generic1]
+  if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
+    return 1 # simple data nodes [2535, 143]
+  if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
+    return 2 # simple linear nodes [99, 4]
+  if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
+    return 3 # events (including call input) (also fire while true and update) [22, 9]
+  if signature == (1, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
+    return 4 # impulse display [2, 1]
+  if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0):
+    return 5 # operation that may fail (or have some other set of fixed output paths like if or for) [42, 35]
+  if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 1, 0):
+    return 6 # data only node with a reference (a source of some kind) [3, 8]
+  if signature == (0, 0, Any, 0, Any, 0, Any, 0, 0, 1, 0):
+    return 7 # probably an event node tbh (all of them are) [29, 6]
+  if signature == (0, 0, Any, 1, 0, 0, Any, 0, 0, 0, 0):
+    return 8 # data node with a dynamic input list (concrete is all multi operations except for format string) [184, 14]
+  if signature == (Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any, Any):
+    return 9 # dynamic output [0, 3]
+  if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
+    return 10 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [1, 7]
+  return 0 # random stuff [17, 4]
+
+types = 11
+
+concretesplit = filternodes(concrete)
+generic1split = filternodes(generic1)
