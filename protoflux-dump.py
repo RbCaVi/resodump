@@ -38,8 +38,8 @@ load("coreclr")
 
 import clr
 from System.Reflection import Assembly
-clr.AddReference('ProtoFlux.Core')
 clr.AddReference('Elements.Core')
+clr.AddReference('ProtoFlux.Core')
 from Elements.Core import StringHelper
 from ProtoFlux.Core import NodeMetadataHelper, NodeCategoryAttribute
 
