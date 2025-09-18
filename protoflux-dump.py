@@ -176,7 +176,7 @@ rename = {
   '0/1 (int4)': 'Zero One Int4',
   
   '+': 'Add',
-  ' ': 'Subtract', # StringHelper.BeautifyName() replaces '-' with ' ' :skull:
+  '-': 'Subtract', # StringHelper.BeautifyName() replaces '-' with ' ' :skull:
   '±': 'Add Subtract',
   '×': 'Multiply',
   '÷': 'Divide',
@@ -186,7 +186,7 @@ rename = {
   
   # these require both a reference and a generic type
   '++': '-- Increment',
-  '  ': '-- Decrement',
+  '--': '-- Decrement',
   'Ref To Output': '-- Ref To Output',
   'Write': '-- Write',
   'Write Latch': '-- Write Latch',
@@ -238,9 +238,9 @@ rename = {
   '√n': 'Square Root',
   'N√x': 'Nth Root',
   '+1': 'Plus One',
-  ' 1': 'Minus One',
+  '-1': 'Minus One',
   '-N': 'Negate',
-  '1 N': 'One Minus',
+  '1-N': 'One Minus',
   
   'Ease  In/ Out Rebound': 'Ease In Out Rebound',
   'Ease In/ Out Bounce': 'Ease In Out Bounce',
