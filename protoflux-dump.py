@@ -378,3 +378,33 @@ typescount = 12
 
 concretesplit = filternodes(concrete)
 generic1split = filternodes(generic1)
+
+(
+  concreteother, # 2 global refs (updatinguser + skipifnull), advanced flow control tm (sequence, multiplex, pulse random), other nodes with multiple impulse inputs
+  concretesimple, # no impulses, no references - can be used anywhere
+  concretelinear, # one impulse in, one impulse out, no references - can also be used anywhere
+  concreteisource, # events without reference (they all have one impulse output) (includes fire on true and friends)
+  concreteidest, # pulse display and "test feature upgrade" (why)
+  concreteflow, # mostly operations with multiple output paths, but also includes some control flow (if, while, for, delay)
+  concretevsource, # changeablesource
+  concreteevents, # events (all have references)
+  concretepuremulti, # multi operations (these are mostly boolean/bitwise but there's concatenate and average as well)
+  concretemulti, # multi operations with fixed inputs (string format and join and various lerp)
+  _, # nothing here
+  _, # link
+) = concretesplit
+
+(
+  generic1other, # field hook and write latch (both have multiple impulse inputs)
+  generic1simple, # has enum handling, comparison and operators, spatial variables, and others
+  generic1linear, # dynamic impulse trigger with data
+  generic1isource, # has call (need context type), fire on local true/false (need context type, overshadowed by concrete one), and fire on change/local change
+  generic1idest, # pulse display (overshadowed by the concrete one)
+  generic1flow, # delay with data, dynamic/cloud variable, and tween
+  generic1vsource, # sources (changeable, reference, data), global to output, and dynamic variable input
+  generic1events, # dynamic variable input with events and dynamic impulse reciever with data
+  generic1puremulti, # multi operations, pick random, and null coalesce
+  generic1multi, # multiplex, index of first match, lerp
+  generic1demultiplex, # also nest but nah
+  generic1gref, # global reference (oh no two tags)
+) = generic1split
