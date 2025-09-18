@@ -364,15 +364,17 @@ def filternode(nodedata):
     return 6 # data only node with a reference (a source of some kind) [3, 8]
   if signature == (0, 0, Any, 0, Any, 0, Any, 0, 0, 1, 0):
     return 7 # probably an event node tbh (all of them are) [29, 6]
-  if signature == (0, 0, Any, 1, 0, 0, Any, 0, 0, 0, 0):
-    return 8 # data node with a dynamic input list (concrete is all multi operations except for format string) [184, 14]
+  if signature == (0, 0, 0, 1, 0, 0, Any, 0, 0, 0, 0):
+    return 8 # data node with only a dynamic input list (concrete is all multi operations) [132, 9]
+  if signature == (0, 0, Ge(1), 1, 0, 0, Any, 0, 0, 0, 0):
+    return 9 # data node with a dynamic input list and some fixed inputs (concrete is all multi operations except for format string) [52, 5]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any, Any):
-    return 9 # dynamic output [0, 3]
+    return 10 # dynamic output [0, 3]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
-    return 10 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [1, 7]
+    return 11 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [1, 7]
   return 0 # random stuff [15, 4]
 
-typescount = 11
+typescount = 12
 
 concretesplit = filternodes(concrete)
 generic1split = filternodes(generic1)
