@@ -32,7 +32,6 @@ libpath = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Resonite'
 sys.path.append(libpath)
 import itertools
 
-
 from pythonnet import load
 load("coreclr")
 
@@ -90,15 +89,6 @@ typedatas = [(
   metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name), # the metadata.Overload field is (right now) always overshadowed by metadata.Name
 ) for t in types]
 
-#key1 = lambda x: x[1].Overload or x[3] # original code
-#key2 = lambda x: x[3] # something else idk
-#key = key1
-#gs = [(k, [*v]) for k,v in itertools.groupby(sorted(typedatas, key = key), key)]
-
-#metadatas = [x[1] for x in typedatas]
-
-#{j for j in {x[3] for x in typedatas} if len({y[2] for y in typedatas if y[3] == j}) > 1} # trying to check for nodes with the same name under different paths
-
 for typ,meta,path,name in typedatas:
   print(typ, name)
   # input impulses
@@ -129,43 +119,6 @@ for name in sorted({name for _,_,_,name in typedatas}):
     if tname == name:
       print(' ', path, typ)
 
-def filtered(f, typedatas = typedatas):
-  typedatas2 = [x for x in typedatas if f(x)]
-  for name in sorted({name for _,_,_,name in typedatas2}):
-    print(name)
-    for typ,meta,path,tname in typedatas2:
-      if tname == name:
-        print(' ', path, typ)
-
-# if .FixedInputCount == .FixedArgumentCount, then the node doesn't have any impulse inputs or outputs
-# .FixedArgumentCount is ones that are not marked conditional
-# not sure why this matters
-
-# :? and ?? have some (but not all) inputs non conditional
-
-# these have all inputs conditional
-# but no impulses in or out
-# not sure why
-# maybe they're updated on every tick or something
-#   Constant Lerp
-#   Constant Slerp
-#   Smooth Lerp
-#   Smooth Slerp
-#   Delay
-#   Delta
-#   Display
-#   Eval Point
-#   Get Active Locomotion Module
-#   Nearest User Foot
-#   Nearest User Hand
-#   Nearest User Head
-#   Object Field Drive`1
-#   Reference Drive`1
-#   Value Field Drive`1
-#   Field As Variable`1
-#   Ref As Variable
-#   User Ref As Variable
-
 # generics
 generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
 generic1 = [x for x in generic if len(x[0].GetGenericArguments()) == 1]
@@ -186,7 +139,7 @@ rename = {
   '0/1 (int4)': 'Zero One Int4',
   
   '+': 'Add',
-  '-': 'Subtract', # StringHelper.BeautifyName() replaces '-' with ' ' :skull:
+  '-': 'Subtract',
   '±': 'Add Subtract',
   '×': 'Multiply',
   '÷': 'Divide',
@@ -307,12 +260,6 @@ rename = {
 concrete = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in concrete]
 generic1 = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in generic1]
 
-# what are my groups?
-# simple nodes - no generics - no references - no dynamics - any number of values
-#   non impulse
-#   max one impulse
-# non simple nodes </3
-
 class TestEq:
   def __init__(self, test):
     self.test = test
@@ -373,9 +320,9 @@ def filternode(nodedata):
   if signature == (0, 0, Ge(1), 1, 0, 0, Any, 0, 0, 0, 0):
     return 9 # data node with a dynamic input list and some fixed inputs (concrete is all multi operations except for format string) [52, 5]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any, Any):
-    return 10 # dynamic output [0, 3]
+    return 10 # dynamic output [0, 2]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
-    return 11 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [1, 7]
+    return 11 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [0, 7]
   return 0 # random stuff [15, 4]
 
 typescount = 12
@@ -385,8 +332,8 @@ generic1split = filternodes(generic1)
 
 (
   concreteother, # 2 global refs (updatinguser + skipifnull), advanced flow control tm (sequence, multiplex, pulse random), other nodes with multiple impulse inputs
-  concretesimple, # no impulses, no references - can be used anywhere
-  concretelinear, # one impulse in, one impulse out, no references - can also be used anywhere
+  concretesimple, # no impulses, no references
+  concretelinear, # one impulse in, one impulse out, no references
   concreteisource, # events without reference (they all have one impulse output) (includes fire on true and friends)
   concreteidest, # pulse display and "test feature upgrade" (why)
   concreteflow, # mostly operations with multiple output paths, but also includes some control flow (if, while, for, delay)
@@ -395,7 +342,7 @@ generic1split = filternodes(generic1)
   concretepuremulti, # multi operations (these are mostly boolean/bitwise but there's concatenate and average as well)
   concretemulti, # multi operations with fixed inputs (string format and join and various lerp)
   _, # nothing here
-  _, # link
+  _, # nothing here
 ) = concretesplit
 
 (
