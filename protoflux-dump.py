@@ -72,6 +72,7 @@ def firstornone(l):
     return l[0]
 
 types = [t for t in types if not any([t.FullName.startswith(x) for x in [
+  # these are never getting real
   'FrooxEngine.ProtoFlux.CoreNodes.AsyncMethodProxy',
   'FrooxEngine.ProtoFlux.CoreNodes.AsyncValueFunctionProxy',
   'FrooxEngine.ProtoFlux.CoreNodes.AsyncObjectFunctionProxy',
@@ -80,6 +81,32 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
   'FrooxEngine.ProtoFlux.CoreNodes.SyncObjectFunctionProxy',
   'ProtoFlux.Runtimes.Execution.NestedNode',
   'ProtoFlux.Runtimes.Execution.Nodes.Link',
+  'ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Debugging.TestFeatureUpgrade',
+  'ProtoFlux.Runtimes.DSP.Array.',
+  'ProtoFlux.Core.ImpulseExportNode',
+  'ProtoFlux.Core.DataImportNode',
+  'ProtoFlux.Runtimes.Execution.Nodes.ValueConstant',
+  'ProtoFlux.Runtimes.Execution.Nodes.ObjectConstant',
+  
+  # i'm planning to have these as specially handled nodes
+  # dynamic numbers of impulses
+  # value and impulse sources (automatically inserted)
+  'ProtoFlux.Runtimes.Execution.Nodes.ImpulseDemultiplexer',
+  'ProtoFlux.Runtimes.Execution.Nodes.ImpulseMultiplexer',
+  'ProtoFlux.Runtimes.Execution.Nodes.AsyncSequence',
+  'ProtoFlux.Runtimes.Execution.Nodes.Actions.PulseRandom',
+  'ProtoFlux.Runtimes.Execution.Nodes.Sequence',
+  
+  'FrooxEngine.ProtoFlux.CoreNodes.SlotSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.SlotRefSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.UserRefSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.ElementSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.ReferenceSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.ValueSource',
+  'FrooxEngine.ProtoFlux.CoreNodes.ObjectValueSource',
+  
+  'ProtoFlux.Runtimes.Execution.Nodes.ExternalCall',
+  'ProtoFlux.Runtimes.Execution.Nodes.ExternalAsyncCall',
 ]])]
 
 typedatas = [(
@@ -259,53 +286,47 @@ def filternodes(nodedatas):
 def signatures(nodedatas):
   for nodedata in nodedatas:
     typ,meta,path,name = nodedata
-    print(meta.signature(), name, typ)
+    print(meta.signature(), typ, name)
 
 def filternode(nodedata):
   signature = nodedata[1].signature()
   # the bracketed numbers are the counts as of 2025.9.12.1173 resonite
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
-    return 1 # simple data nodes [2535, 143]
+    return 1 # simple data nodes [2526, 138]
   if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
-    return 2 # simple linear nodes [99, 4]
+    return 2 # simple linear nodes [96, 4]
   if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
-    return 3 # events (including call input) (also fire while true and update) [22, 9]
-  if signature == (1, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
-    return 4 # impulse display [2, 1]
+    return 3 # events (including call input) (also fire while true and update) [22, 7]
   if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0):
-    return 5 # operation that may fail (or have some other set of fixed output paths like if or for) [42, 35]
+    return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [42, 35]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 1, 0):
-    return 6 # data only node with a reference (a source of some kind) [3, 8]
+    return 5 # data only node with a reference (a source of some kind) [0, 4]
   if signature == (0, 0, Any, 0, Any, 0, Any, 0, 0, 1, 0):
-    return 7 # probably an event node tbh (all of them are) [29, 6]
+    return 6 # probably an event node tbh (all of them are) [29, 6]
   if signature == (0, 0, 0, 1, 0, 0, Any, 0, 0, 0, 0):
-    return 8 # data node with only a dynamic input list (concrete is all multi operations) [132, 9]
+    return 7 # data node with only a dynamic input list (concrete is all multi operations) [132, 9]
   if signature == (0, 0, Ge(1), 1, 0, 0, Any, 0, 0, 0, 0):
-    return 9 # data node with a dynamic input list and some fixed inputs (concrete is all multi operations except for format string) [52, 5]
-  if signature == (Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any, Any):
-    return 10 # dynamic output [0, 2]
+    return 8 # data node with a dynamic input list and some fixed inputs (concrete is all multi operations except for format string) [52, 5]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
-    return 11 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [0, 7]
-  return 0 # random stuff [15, 4]
+    return 9 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [0, 7]
+  return 0 # random stuff [10, 4]
 
-typescount = 12
+typescount = 10
 
 concretesplit = filternodes(concrete)
 generic1split = filternodes(generic1)
 
 (
-  concreteother, # 2 global refs (updatinguser + skipifnull), advanced flow control tm (sequence, multiplex, pulse random), other nodes with multiple impulse inputs
+  concreteother, # 2 global refs (updatinguser + skipifnull), other nodes with multiple impulse inputs
   concretesimple, # no impulses, no references
   concretelinear, # one impulse in, one impulse out, no references
   concreteisource, # events without reference (they all have one impulse output) (includes fire on true and friends)
-  concreteidest, # pulse display and "test feature upgrade" (why)
-  concreteflow, # mostly operations with multiple output paths, but also includes some control flow (if, while, for, delay)
-  concretevsource, # changeablesource
+  concreteflow, # operations with multiple output paths (usually pass/fail)
+  _, # nothing here
   concreteevents, # events (all have references)
   concretepuremulti, # multi operations (these are mostly boolean/bitwise but there's concatenate and average as well)
   concretemulti, # multi operations with fixed inputs (string format and join and various lerp)
-  _, # nothing here
   _, # nothing here
 ) = concretesplit
 
@@ -313,13 +334,11 @@ generic1split = filternodes(generic1)
   generic1other, # field hook and write latch (both have multiple impulse inputs)
   generic1simple, # has enum handling, comparison and operators, spatial variables, and others
   generic1linear, # dynamic impulse trigger with data
-  generic1isource, # has call (need context type), fire on local true/false (need context type, overshadowed by concrete one), and fire on change/local change
-  generic1idest, # pulse display (overshadowed by the concrete one)
+  generic1isource, # fire on local true/false (need context type, overshadowed by concrete one) and fire on change/local change
   generic1flow, # delay with data, dynamic/cloud variable, and tween
   generic1vsource, # sources (changeable, reference, data), global to output, and dynamic variable input
   generic1events, # dynamic variable input with events and dynamic impulse reciever with data
   generic1puremulti, # multi operations, pick random, and null coalesce
   generic1multi, # multiplex, index of first match, lerp
-  generic1demultiplex, # also nest but nah
   generic1gref, # global reference (oh no two tags)
 ) = generic1split
