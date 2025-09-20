@@ -70,6 +70,17 @@ def firstornone(l):
   if len(l) > 0:
     return l[0]
 
+types = [t for t in types if not any([t.FullName.startswith(x) for x in [
+  'FrooxEngine.ProtoFlux.CoreNodes.AsyncMethodProxy',
+  'FrooxEngine.ProtoFlux.CoreNodes.AsyncValueFunctionProxy',
+  'FrooxEngine.ProtoFlux.CoreNodes.AsyncObjectFunctionProxy',
+  'FrooxEngine.ProtoFlux.CoreNodes.SyncMethodProxy',
+  'FrooxEngine.ProtoFlux.CoreNodes.SyncValueFunctionProxy',
+  'FrooxEngine.ProtoFlux.CoreNodes.SyncObjectFunctionProxy',
+  'ProtoFlux.Runtimes.Execution.NestedNode',
+  'ProtoFlux.Runtimes.Execution.Nodes.Link',
+]])]
+
 typedatas = [(
   t,
   metadata := NodeMetadataHelper.GetMetadata(t),
@@ -116,7 +127,6 @@ for name in sorted({name for _,_,_,name in typedatas}):
     if tname == name:
       print(' ', path, typ)
 
-lambda x: len(x[0].GetGenericArguments()) != 0 and x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']
 def filtered(f, typedatas = typedatas):
   typedatas2 = [x for x in typedatas if f(x)]
   for name in sorted({name for _,_,_,name in typedatas2}):
@@ -154,8 +164,6 @@ def filtered(f, typedatas = typedatas):
 #   Ref As Variable
 #   User Ref As Variable
 
-typedatas = [x for x in typedatas if x[3] not in ['Method Proxy', 'Function Proxy', 'Async Method Proxy', 'Async Function Proxy']]
-
 # generics
 generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
 generic1 = [x for x in generic if len(x[0].GetGenericArguments()) == 1]
@@ -190,12 +198,6 @@ rename = {
   'Ref To Output': '-- Ref To Output',
   'Write': '-- Write',
   'Write Latch': '-- Write Latch',
-  
-  # two references
-  'Link': '-- Link',
-  
-  # no.
-  'Nest': '-- Nest',
   
   '1/(π/2)': 'Inverse Half Pi',
   '1/(π/4)': 'Inverse Quarter Pi',
