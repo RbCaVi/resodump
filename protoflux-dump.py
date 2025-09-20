@@ -89,24 +89,6 @@ typedatas = [(
   metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name), # the metadata.Overload field is (right now) always overshadowed by metadata.Name
 ) for t in types]
 
-for typ,meta,path,name in typedatas:
-  print(str(typ), '=', name, str(meta))
-
-for name in sorted({name for _,_,_,name in typedatas}):
-  print(name)
-  
-  for typ,meta,path,tname in typedatas:
-    if tname == name:
-      print(' ', path, typ)
-
-# generics
-generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
-generic1 = [x for x in generic if len(x[0].GetGenericArguments()) == 1]
-generic2 = [x for x in generic if len(x[0].GetGenericArguments()) == 2 and x[0].GetGenericArguments()[0].Name != 'C'] # because there are generic versions of some nodes that take a context type as the first parameter # this is literally spherical harmonics evaluate and object cast
-# 2 generic parameters is the max for non proxy nodes (proxy nodes go up to like 7)
-
-concrete = [x for x in typedatas if len(x[0].GetGenericArguments()) == 0]
-
 # non alphanumeric names get renamed <3
 rename = {
   '0/1 (float)': 'Zero One Float',
@@ -237,8 +219,25 @@ rename = {
   'Sample Value Animation Track`1': 'Sample Value Animation Track',
 }
 
-concrete = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in concrete]
-generic1 = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in generic1]
+typedatas = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in typedatas]
+
+for typ,meta,path,name in typedatas:
+  print(str(typ), '=', name, str(meta))
+
+for name in sorted({name for _,_,_,name in typedatas}):
+  print(name)
+  
+  for typ,meta,path,tname in typedatas:
+    if tname == name:
+      print(' ', path, typ)
+
+# generics
+generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
+generic1 = [x for x in generic if len(x[0].GetGenericArguments()) == 1]
+generic2 = [x for x in generic if len(x[0].GetGenericArguments()) == 2 and x[0].GetGenericArguments()[0].Name != 'C'] # because there are generic versions of some nodes that take a context type as the first parameter # this is literally spherical harmonics evaluate and object cast
+# 2 generic parameters is the max for non proxy nodes (proxy nodes go up to like 7)
+
+concrete = [x for x in typedatas if len(x[0].GetGenericArguments()) == 0]
 
 class TestEq:
   def __init__(self, test):
