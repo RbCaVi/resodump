@@ -43,6 +43,8 @@ clr.AddReference('ProtoFlux.Core')
 from Elements.Core import StringHelper
 from ProtoFlux.Core import NodeMetadataHelper, NodeCategoryAttribute
 
+import pf_metadata
+
 print('loaded libraries')
 
 assemblynames = ['FrooxEngine.dll', 'ProtoFlux.Core.dll', 'Protoflux.Nodes.Core.dll', 'Protoflux.Nodes.FrooxEngine.dll']
@@ -83,9 +85,9 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
 
 typedatas = [(
   t,
-  metadata := NodeMetadataHelper.GetMetadata(t),
+  metadata := pf_metadata.ProcessNodeMetadata(NodeMetadataHelper.GetMetadata(t)),
   nullconcat('Root/', getoptionalname(firstornone(t.GetCustomAttributes(NodeCategoryAttribute, True)))) or 'Root',
-  metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name) # the metadata.Overload field is (right now) always overshadowed by metadata.Name
+  metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name), # the metadata.Overload field is (right now) always overshadowed by metadata.Name
 ) for t in types]
 
 #key1 = lambda x: x[1].Overload or x[3] # original code
