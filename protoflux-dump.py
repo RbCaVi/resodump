@@ -270,21 +270,6 @@ class TestEq:
 Any = TestEq(lambda x: True)
 Ge = lambda v: TestEq(lambda x: x >= v)
 
-def getsignature(nodedata):
-  typ,meta,path,name = nodedata
-  FixedOperationsCount = len(meta.FixedOperations)
-  DynamicOperationsCount = len(meta.DynamicOperations)
-  FixedInputsCount = len(meta.FixedInputs)
-  DynamicInputsCount = len(meta.DynamicInputs)
-  FixedImpulsesCount = len(meta.FixedImpulses)
-  DynamicImpulsesCount = len(meta.DynamicImpulses)
-  FixedOutputsCount = len(meta.FixedOutputs)
-  DynamicOutputsCount = len(meta.DynamicOutputs)
-  FixedReferencesCount = len(meta.FixedReferences)
-  FixedGlobalRefsCount = len(meta.FixedGlobalRefs)
-  DynamicGlobalRefsCount = len(meta.DynamicGlobalRefs)
-  return (FixedOperationsCount, DynamicOperationsCount, FixedInputsCount, DynamicInputsCount, FixedImpulsesCount, DynamicImpulsesCount, FixedOutputsCount, DynamicOutputsCount, FixedReferencesCount, FixedGlobalRefsCount, DynamicGlobalRefsCount)
-
 def filternodes(nodedatas):
   lists = [[] for _ in range(typescount)]
   for nodedata in nodedatas:
@@ -295,10 +280,10 @@ def filternodes(nodedatas):
 def signatures(nodedatas):
   for nodedata in nodedatas:
     typ,meta,path,name = nodedata
-    print(getsignature(nodedata), name, typ)
+    print(meta.signature(), name, typ)
 
 def filternode(nodedata):
-  signature = getsignature(nodedata)
+  signature = nodedata[1].signature()
   # the bracketed numbers are the counts as of 2025.9.12.1173 resonite
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
