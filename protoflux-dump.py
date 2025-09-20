@@ -90,27 +90,7 @@ typedatas = [(
 ) for t in types]
 
 for typ,meta,path,name in typedatas:
-  print(typ, name)
-  # input impulses
-  for x in meta.FixedOperations:
-    print('  meta.FixedOperations', x)
-  for x in meta.DynamicOperations:
-    print('  meta.DynamicOperations', x)
-  # input values
-  for x in meta.FixedInputs:
-    print('  meta.FixedInputs', x)
-  for x in meta.DynamicInputs:
-    print('  meta.DynamicInputs', x)
-  # output impulses
-  for x in meta.FixedImpulses:
-    print('  meta.FixedImpulses', x)
-  for x in meta.DynamicImpulses:
-    print('  meta.DynamicImpulses', x)
-  # output values
-  for x in meta.FixedOutputs:
-    print('  meta.FixedOutputs', x)
-  for x in meta.DynamicOutputs:
-    print('  meta.DynamicOutputs', x)
+  print(str(typ), '=', name, str(meta))
 
 for name in sorted({name for _,_,_,name in typedatas}):
   print(name)
