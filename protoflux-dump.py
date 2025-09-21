@@ -330,13 +330,13 @@ def filternode(nodedata):
   # the bracketed numbers are the counts as of 2025.9.12.1173 resonite
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
-    return 1 # simple data nodes [2526, 138]
+    return 1 # simple data nodes [2526, 141]
   if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
-    return 2 # simple linear nodes [96, 4]
+    return 2 # simple linear nodes [99, 4]
   if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
     return 3 # events (including call input) (also fire while true and update) [22, 7]
   if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0):
-    return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [42, 35]
+    return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [43, 36]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 1, 0):
     return 5 # data only node with a reference (a source of some kind) [0, 4]
   if signature == (0, 0, Any, 0, Any, 0, Any, 0, 0, 1, 0):
@@ -347,7 +347,7 @@ def filternode(nodedata):
     return 8 # data node with a dynamic input list and some fixed inputs (concrete is all multi operations except for format string) [52, 5]
   if signature == (Any, Any, Any, Any, Any, Any, Any, Any, Ge(1), Any, Any):
     return 9 # static reference (all of these i don't want to do </3 - the generic ones (all of them except Link) probably aren't that bad though) [0, 7]
-  return 0 # random stuff [10, 4]
+  return 0 # random stuff [10, 6]
 
 typescount = 10
 
