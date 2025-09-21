@@ -90,7 +90,9 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
   
   # i'm planning to have these as specially handled nodes
   # dynamic numbers of impulses
-  # value and impulse sources (automatically inserted)
+  # value sources (automatically inserted)
+  # impulse sources (uhhhh)
+  # casts (automatically inserted)
   'ProtoFlux.Runtimes.Execution.Nodes.ImpulseDemultiplexer',
   'ProtoFlux.Runtimes.Execution.Nodes.ImpulseMultiplexer',
   'ProtoFlux.Runtimes.Execution.Nodes.AsyncSequence',
@@ -107,6 +109,11 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
   
   'ProtoFlux.Runtimes.Execution.Nodes.ExternalCall',
   'ProtoFlux.Runtimes.Execution.Nodes.ExternalAsyncCall',
+  
+  'ProtoFlux.Runtimes.Execution.Nodes.Casts.Cast_',
+  'ProtoFlux.Runtimes.Execution.Nodes.Casts.ObjectCast',
+  'ProtoFlux.Runtimes.Execution.Nodes.Casts.NullableToObjectCast',
+  'ProtoFlux.Runtimes.Execution.Nodes.Casts.ValueToObjectCast',
 ]])]
 
 typedatas = [(
@@ -330,7 +337,7 @@ def filternode(nodedata):
   # the bracketed numbers are the counts as of 2025.9.12.1173 resonite
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
-    return 1 # simple data nodes [2526, 141]
+    return 1 # simple data nodes [2028, 139]
   if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
     return 2 # simple linear nodes [99, 4]
   if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
