@@ -28,26 +28,46 @@
 
 import os
 import sys
+import itertools
+import pickle
+import pythonnet
+
 libpath = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Resonite'
 sys.path.append(libpath)
-import itertools
-
-from pythonnet import load
-load("coreclr")
+pythonnet.load("coreclr")
 
 import clr
-from System.Reflection import Assembly
 clr.AddReference('Elements.Core')
 clr.AddReference('ProtoFlux.Core')
+from System.Reflection import Assembly, FieldInfo, PropertyInfo
+from System import Type, Enum, DateTime, TimeSpan
+from System.Globalization import CultureInfo
 from Elements.Core import StringHelper
+from Elements.Core import (
+  bool2, bool3, bool4,
+  byte2, byte3, byte4,
+  ushort2, ushort3, ushort4,
+  uint2, uint3, uint4,
+  ulong2, ulong3, ulong4,
+  sbyte2, sbyte3, sbyte4,
+  short2, short3, short4,
+  int2, int3, int4,
+  long2, long3, long4,
+  float2, float3, float4,
+  double2, double3, double4,
+  floatQ, doubleQ,
+  float2x2, float3x3, float4x4,
+  double2x2, double3x3, double4x4,
+  color, colorX,
+)
 from ProtoFlux.Core import NodeMetadataHelper, NodeCategoryAttribute
 
 import pf_metadata
 
 print('loaded libraries')
 
-assemblynames = ['FrooxEngine.dll', 'ProtoFlux.Core.dll', 'Protoflux.Nodes.Core.dll', 'Protoflux.Nodes.FrooxEngine.dll']
-assemblies = [Assembly.LoadFrom(os.path.join(libpath, name)) for name in assemblynames]
+assemblynames = ['FrooxEngine', 'ProtoFlux.Core', 'Protoflux.Nodes.Core', 'Protoflux.Nodes.FrooxEngine']
+assemblies = [clr.AddReference(name) for name in assemblynames]
 INode = assemblies[1].GetType('ProtoFlux.Core.INode', True) # True - throw if not found
 
 print('loaded assemblies')
@@ -293,10 +313,10 @@ rename = {
 typedatas = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in typedatas]
 
 for typ,meta,path,name in typedatas:
-  print(str(typ), '=', name, str(meta))
+  pass#print(str(typ), '=', name, str(meta))
 
 for name in sorted({name for _,_,_,name in typedatas}):
-  print(name)
+  pass#print(name)
   
   for typ,meta,path,tname in typedatas:
     if tname == name:
@@ -343,7 +363,7 @@ def filternode(nodedata):
   if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
     return 3 # events (including call input) (also fire while true and update) [22, 7]
   if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0):
-    return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [43, 36]
+    return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [65, 43]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 1, 0):
     return 5 # data only node with a reference (a source of some kind) [0, 4]
   if signature == (0, 0, Any, 0, Any, 0, Any, 0, 0, 1, 0):
@@ -384,5 +404,99 @@ generic1split = filternodes(generic1)
   generic1events, # dynamic variable input with events and dynamic impulse reciever with data
   generic1puremulti, # multi operations, pick random, and null coalesce
   generic1multi, # multiplex, index of first match, lerp
-  generic1gref, # global reference (oh no two tags)
+  generic1sref, # static reference (oh no two tags)
 ) = generic1split
+
+def pythonify(v):
+  for basetype in ['bool', 'byte', 'ushort', 'uint', 'ulong', 'sbyte', 'short', 'int', 'long', 'float', 'double']:
+    for size in ['2', '3', '4']:
+      # idk evil floating point bit hack frfr
+      if isinstance(v, globals()[basetype + size]):
+        return basetype, [v[i] for i in range(int(size))]
+  for basetype in ['float', 'double']:
+    for size in ['2', '3', '4']:
+      if isinstance(v, globals()[basetype + size + 'x' + size]):
+        return basetype, [[v[i, j] for j in range(int(size))] for i in range(int(size))]
+  for typ in ['floatQ', 'doubleQ', 'color']:
+    if isinstance(v, globals()[typ]):
+      return typ, [v[i] for i in range(4)]
+  if isinstance(v, colorX):
+    return 'colorX', [v[i] for i in range(4)], pythonify(v.Profile)[1]
+  try:
+    return Enum.GetName[type(v)](v)
+  except TypeError:
+    pass
+  if not isinstance(v, (PropertyInfo, CultureInfo, DateTime, TimeSpan)):
+    print(v, type(v))
+  return v
+
+a = []
+
+def killfields(val):
+  # remove fieldinfo objects
+  realattrs = [x for x in dir(val) if not x.startswith('__') and x not in dir(type(val))]
+  for attr in realattrs:
+    aval = getattr(val, attr)
+    if isinstance(aval, FieldInfo):
+      delattr(val, attr)
+    elif isinstance(aval, list):
+      for x in aval:
+        killfields(x)
+    else:
+      if isinstance(aval, (
+        bool2, bool3, bool4,
+        byte2, byte3, byte4,
+        ushort2, ushort3, ushort4,
+        uint2, uint3, uint4,
+        ulong2, ulong3, ulong4,
+        sbyte2, sbyte3, sbyte4,
+        short2, short3, short4,
+        int2, int3, int4,
+        long2, long3, long4,
+        float2, float3, float4,
+        double2, double3, double4,
+        floatQ, doubleQ,
+        float2x2, float3x3, float4x4,
+        double2x2, double3x3, double4x4,
+        color, colorX,
+      )) or not isinstance(aval, (
+        bool, type(None), str, int, float, Type
+      )):
+        setattr(val, attr, pythonify(aval))
+        continue
+      if not isinstance(aval, (bool, type(None), str, int, float, Type)):
+        print(attr, type(aval))
+        a.append((attr, type(aval)))
+        continue
+      killfields(aval)
+
+def makeitempicklable(x, tag):
+  typ,meta,path,name = x
+  return name, tag, str(typ), killfields(meta)
+
+def makelistpicklable(l, tag):
+  return [makeitempicklable(x, tag) for x in l]
+
+with open('protoflux-node-data.pkl', 'wb') as f:
+  pickle.dump(
+    makelistpicklable(concreteother, 'otherc') +
+    makelistpicklable(generic1other, 'otherg') +
+    makelistpicklable(concretesimple, 'datac') +
+    makelistpicklable(generic1simple, 'datag') +
+    makelistpicklable(concretelinear, 'actionc') +
+    makelistpicklable(generic1linear, 'actiong') +
+    makelistpicklable(concreteisource, 'globaleventsc') +
+    makelistpicklable(generic1isource, 'globaleventsg') +
+    makelistpicklable(concreteflow, 'flowc') +
+    makelistpicklable(generic1flow, 'flowg') +
+    makelistpicklable(concreteevents, 'eventsc') +
+    makelistpicklable(generic1events, 'eventsg') +
+    makelistpicklable(concretepuremulti, 'variadicc') +
+    makelistpicklable(generic1puremulti, 'variadicg') +
+    makelistpicklable(concretemulti, 'fvariadicc') +
+    makelistpicklable(generic1multi, 'fvariadicg') +
+    makelistpicklable(generic1vsource, 'grefout') +
+    makelistpicklable(generic1sref, 'sref') +
+    makelistpicklable(generic2, 'evaluatesh'),
+    f
+  )
