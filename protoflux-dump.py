@@ -413,72 +413,35 @@ generic1split = filternodes(generic1)
   generic1sref, # static reference (oh no two tags)
 ) = generic1split
 
-def pythonify(v):
-  for basetype in ['bool', 'byte', 'ushort', 'uint', 'ulong', 'sbyte', 'short', 'int', 'long', 'float', 'double']:
-    for size in ['2', '3', '4']:
-      # idk evil floating point bit hack frfr
-      if isinstance(v, globals()[basetype + size]):
-        return basetype, [v[i] for i in range(int(size))]
-  for basetype in ['float', 'double']:
-    for size in ['2', '3', '4']:
-      if isinstance(v, globals()[basetype + size + 'x' + size]):
-        return basetype, [[v[i, j] for j in range(int(size))] for i in range(int(size))]
-  for typ in ['floatQ', 'doubleQ', 'color']:
-    if isinstance(v, globals()[typ]):
-      return typ, [v[i] for i in range(4)]
-  if isinstance(v, colorX):
-    return 'colorX', [v[i] for i in range(4)], pythonify(v.Profile)[1]
-  try:
-    return Enum.GetName[type(v)](v)
-  except TypeError:
-    pass
-  if not isinstance(v, (PropertyInfo, CultureInfo, DateTime, TimeSpan)):
-    print(v, type(v))
-  return v
-
 a = []
+
+attrscache = {}
+
+def getattrlist(val):
+  if type(val) not in attrscache:
+    attrscache[type(val)] = [x for x in dir(val) if not x.startswith('__') and x not in dir(type(val))]
+  return attrscache[type(val)]
 
 def killfields(val):
   # remove fieldinfo objects
-  realattrs = [x for x in dir(val) if not x.startswith('__') and x not in dir(type(val))]
-  for attr in realattrs:
+  for attr in getattrlist(val):
     aval = getattr(val, attr)
-    if isinstance(aval, FieldInfo):
+    if attr in ['DefaultValue', 'IsListeningToChanges', 'IsListeningToChangesEval', 'Field']:
       delattr(val, attr)
     elif isinstance(aval, list):
       for x in aval:
         killfields(x)
     else:
-      if isinstance(aval, (
-        bool2, bool3, bool4,
-        byte2, byte3, byte4,
-        ushort2, ushort3, ushort4,
-        uint2, uint3, uint4,
-        ulong2, ulong3, ulong4,
-        sbyte2, sbyte3, sbyte4,
-        short2, short3, short4,
-        int2, int3, int4,
-        long2, long3, long4,
-        float2, float3, float4,
-        double2, double3, double4,
-        floatQ, doubleQ,
-        float2x2, float3x3, float4x4,
-        double2x2, double3x3, double4x4,
-        color, colorX,
-      )) or not isinstance(aval, (
-        bool, type(None), str, int, float, Type
-      )):
-        setattr(val, attr, pythonify(aval))
-        continue
-      if not isinstance(aval, (bool, type(None), str, int, float, Type)):
-        print(attr, type(aval))
+      if not isinstance(aval, (bool, type(None), str, int, float)):
+        print(attr, type(aval), aval)
         a.append((attr, type(aval)))
         continue
       killfields(aval)
 
 def makeitempicklable(x, tag):
   typ,meta,path,name = x
-  return name, tag, str(typ), killfields(meta)
+  killfields(meta)
+  return name, tag, str(typ), meta
 
 def makelistpicklable(l, tag):
   return [makeitempicklable(x, tag) for x in l]
