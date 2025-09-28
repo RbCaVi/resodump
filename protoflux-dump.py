@@ -143,6 +143,8 @@ typedatas = [(
   metadata.Name or StringHelper.BeautifyName(metadata.Overload or t.Name), # the metadata.Overload field is (right now) always overshadowed by metadata.Name
 ) for t in types]
 
+print('got node names')
+
 # non alphanumeric names get renamed <3
 rename = {
   '0/1 (float)': 'Zero One Float',
@@ -312,6 +314,8 @@ rename = {
 
 typedatas = [(typ, meta, path, rename.get(name, name)) for typ,meta,path,name in typedatas]
 
+print('renamed nodes')
+
 for typ,meta,path,name in typedatas:
   pass#print(str(typ), '=', name, str(meta))
 
@@ -320,7 +324,9 @@ for name in sorted({name for _,_,_,name in typedatas}):
   
   for typ,meta,path,tname in typedatas:
     if tname == name:
-      print(' ', path, typ)
+      pass#print(' ', path, typ)
+
+print('printed node info')
 
 # generics
 generic = [x for x in typedatas if len(x[0].GetGenericArguments()) != 0]
