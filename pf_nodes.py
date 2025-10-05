@@ -188,6 +188,8 @@ class ConcreteFVariadicNode(ConcreteNode):
   
   def specialize(self, intypes, outtypes):
     variadiccount = len(intypes) - len(self.inputinfos)
+    if variadiccount < 0:
+      return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
     return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
 
@@ -274,6 +276,8 @@ class GenericFVariadicNode(GenericNode):
   
   def specialize(self, intypes, outtypes):
     variadiccount = len(intypes) - len(self.inputinfos)
+    if variadiccount < 0:
+      return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
     return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
 
