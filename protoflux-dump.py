@@ -107,12 +107,14 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
   'ProtoFlux.Core.DataImportNode',
   'ProtoFlux.Runtimes.Execution.Nodes.ValueConstant',
   'ProtoFlux.Runtimes.Execution.Nodes.ObjectConstant',
+  'ProtoFlux.Runtimes.Execution.Nodes.Math.Constants.Feven', # object ulong of doom and despair
   
   # i'm planning to have these as specially handled nodes
-  # dynamic numbers of impulses
+  # dynamic numbers of impulses (also sequence do i need those?)
   # value sources (automatically inserted)
   # impulse sources (uhhhh)
   # casts (automatically inserted)
+  # relays (only used in function calls - i don't need these as normal nodes, right?)
   'ProtoFlux.Runtimes.Execution.Nodes.ImpulseDemultiplexer',
   'ProtoFlux.Runtimes.Execution.Nodes.ImpulseMultiplexer',
   'ProtoFlux.Runtimes.Execution.Nodes.AsyncSequence',
@@ -134,6 +136,14 @@ types = [t for t in types if not any([t.FullName.startswith(x) for x in [
   'ProtoFlux.Runtimes.Execution.Nodes.Casts.ObjectCast',
   'ProtoFlux.Runtimes.Execution.Nodes.Casts.NullableToObjectCast',
   'ProtoFlux.Runtimes.Execution.Nodes.Casts.ValueToObjectCast',
+  
+  'ProtoFlux.Runtimes.Execution.Nodes.ContinuationRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.CallRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.AsyncCallRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.ValueRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.ObjectRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.ContinuouslyChangingValueRelay',
+  'ProtoFlux.Runtimes.Execution.Nodes.ContinuouslyChangingObjectRelay',
 ]])]
 
 typedatas = [(
@@ -364,11 +374,11 @@ def filternode(nodedata):
   # of [concrete, generic1]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 0, 0):
     return 1 # simple data nodes [2028, 139]
-  if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
+  if signature == (1, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0) and nodedata[1].FixedOperations[0].IsSelf:
     return 2 # simple linear nodes [99, 4]
   if signature == (0, 0, Any, 0, 1, 0, Any, 0, 0, 0, 0):
     return 3 # events (including call input) (also fire while true and update) [22, 7]
-  if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0):
+  if signature == (1, 0, Any, 0, Any, 0, Any, 0, 0, 0, 0) and nodedata[1].FixedOperations[0].IsSelf:
     return 4 # operation that may fail (or have some other set of fixed output paths like if or for) [65, 43]
   if signature == (0, 0, Any, 0, 0, 0, Any, 0, 0, 1, 0):
     return 5 # data only node with a reference (a source of some kind) [0, 4]
@@ -431,6 +441,8 @@ def killfields(val):
     elif isinstance(aval, list):
       for x in aval:
         killfields(x)
+    elif isinstance(aval, Type):
+      setattr(val, attr, str(aval))
     else:
       if not isinstance(aval, (bool, type(None), str, int, float)):
         print(attr, type(aval), aval)
@@ -438,10 +450,13 @@ def killfields(val):
         continue
       killfields(aval)
 
+def makegenericparameterpicklable(t):
+  return t.Name, tuple(str(t) for t in t.GetGenericParameterConstraints())
+
 def makeitempicklable(x, tag):
   typ,meta,path,name = x
   killfields(meta)
-  return name, tag, str(typ), meta
+  return name, tag, str(typ), tuple(makegenericparameterpicklable(t) for t in typ.GenericTypeParameters), meta
 
 def makelistpicklable(l, tag):
   return [makeitempicklable(x, tag) for x in l]
