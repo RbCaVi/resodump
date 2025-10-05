@@ -101,8 +101,8 @@ class ConcreteNode(Node):
   def __str__(self):
     return f'''{type(self).__name__} {self.typename}:\n\t{self.strsig()}'''
   
-  def specialize(self, intypes, outtypes):
-    return specializeconcrete(self.inputinfos, self.outputinfos, intypes, outtypes, None)
+  def specialize(self, intypes, outtypes, generics, context):
+    return specializeconcrete(self.inputinfos, self.outputinfos, intypes, outtypes, generics, context, None)
 
 class GenericNode(Node): # specifically one parameter generic
   def __init__(self, typename, generics, metadata):
@@ -115,11 +115,11 @@ class GenericNode(Node): # specifically one parameter generic
   def __str__(self):
     return f'''{type(self).__name__} {self.typename}<{' '.join([self.typeparamname] + [str(c) for c in self.typeparamconstraints])}>:\n\t{self.strsig()}'''
   
-  def specialize(self, intypes, outtypes):
+  def specialize(self, intypes, outtypes, generics, context):
     # how do i choose a generic type?
-    return specializegeneric(self.typeparamname, self.typeparamconstraints, self.inputinfos, self.outputinfos, intypes, outtypes, None)
+    return specializegeneric(self.typeparamname, self.typeparamconstraints, self.inputinfos, self.outputinfos, intypes, outtypes, generics, context, None)
 
-def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, extradata):
+def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, generics, context, extradata):
   if len(inputtypes) != len(nodeinputs):
     return None
   if len(outputtypes) != len(nodeoutputs):
@@ -134,7 +134,7 @@ def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, extrada
     [ot.over(no.typ) for ot,no in zip(outputtypes, nodeoutputs)],
   )
 
-def specializegeneric(generictypename, generictypeconstraints, nodeinputs, nodeoutputs, inputtypes, outputtypes, extradata):
+def specializegeneric(generictypename, generictypeconstraints, nodeinputs, nodeoutputs, inputtypes, outputtypes, generics, context, extradata):
   print(generictypename)
   generic = PfTypeRange(generictypeconstraints, []) # it's always a subtype of the type constraints
   if len(inputtypes) != len(nodeinputs):
@@ -171,10 +171,10 @@ class ConcreteVariadicNode(ConcreteNode):
     self.inputsinfo = getinputlistinfo(metadata.DynamicInputs[0])
     self.outputinfos = [getoutputinfo(o) for o in metadata.FixedOutputs]
   
-  def specialize(self, intypes, outtypes):
+  def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes)
     inputinfos = [self.inputsinfo for _ in range(variadiccount)]
-    return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
+    return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
 
 class ConcreteFVariadicNode(ConcreteNode):
   def __init__(self, typename, generics, metadata):
@@ -186,12 +186,12 @@ class ConcreteFVariadicNode(ConcreteNode):
   def strargs(self):
     return f'{self.strargs_()}, {self.strvarargs_()}'
   
-  def specialize(self, intypes, outtypes):
+  def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes) - len(self.inputinfos)
     if variadiccount < 0:
       return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
-    return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
+    return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
 
 class ConcreteLinearNode(ConcreteNode):
   def __init__(self, typename, generics, metadata):
@@ -259,10 +259,10 @@ class GenericVariadicNode(GenericNode):
     self.inputsinfo = getinputlistinfo(metadata.DynamicInputs[0])
     self.outputinfos = [getoutputinfo(o) for o in metadata.FixedOutputs]
   
-  def specialize(self, intypes, outtypes):
+  def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes)
     inputinfos = [self.inputsinfo for _ in range(variadiccount)]
-    return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
+    return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
 
 class GenericFVariadicNode(GenericNode):
   def __init__(self, typename, generics, metadata):
@@ -274,12 +274,12 @@ class GenericFVariadicNode(GenericNode):
   def strargs(self):
     return f'{self.strargs_()}, {self.strvarargs_()}'
   
-  def specialize(self, intypes, outtypes):
+  def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes) - len(self.inputinfos)
     if variadiccount < 0:
       return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
-    return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, variadiccount)
+    return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
 
 class GenericLinearNode(GenericNode):
   def __init__(self, typename, generics, metadata):
