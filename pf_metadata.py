@@ -2,6 +2,8 @@ def indent(text):
   return '  ' + text.replace('\n', '\n  ')
 
 def lstr(l):
+  if len(l) == 0:
+    return '[]'
   return '\n'.join(('[',
     *[indent(str(x)) for x in l],
   ']'))
@@ -39,20 +41,20 @@ class ProcessNodeMetadata:
   
   def __str__(self):
     return '\n'.join(('NodeMetadata {',
-      indent('Name = ' + str(self.Name)),
-      indent('Overload = ' + str(self.Overload)),
-      indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
+      #indent('Name = ' + str(self.Name)),
+      #indent('Overload = ' + str(self.Overload)),
+      #indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
       indent('FixedInputs = ' + lstr(self.FixedInputs)),
+      indent('DynamicInputs = ' + lstr(self.DynamicInputs)),
       indent('FixedOutputs = ' + lstr(self.FixedOutputs)),
+      indent('DynamicOutputs = ' + lstr(self.DynamicOutputs)),
       indent('FixedImpulses = ' + lstr(self.FixedImpulses)),
+      indent('DynamicImpulses = ' + lstr(self.DynamicImpulses)),
+      indent('DynamicOperations = ' + lstr(self.DynamicOperations)),
       indent('FixedOperations = ' + lstr(self.FixedOperations)),
       indent('FixedReferences = ' + lstr(self.FixedReferences)),
       indent('FixedGlobalRefs = ' + lstr(self.FixedGlobalRefs)),
-      indent('DynamicInputs = ' + lstr(self.DynamicInputs)),
-      indent('DynamicOutputs = ' + lstr(self.DynamicOutputs)),
-      indent('DynamicImpulses = ' + lstr(self.DynamicImpulses)),
-      indent('DynamicOperations = ' + lstr(self.DynamicOperations)),
-      indent('DynamicGlobalRefs = ' + lstr(self.DynamicGlobalRefs)),
+      #indent('DynamicGlobalRefs = ' + lstr(self.DynamicGlobalRefs)),
     '}'))
   
   def signature(self):
@@ -90,12 +92,12 @@ class ProcessInputMetadata:
   def __str__(self):
     return '\n'.join(('InputMetadata {',
       indent('Name = ' + str(self.Name)),
-      indent('DefaultValue = ' + str(self.DefaultValue)),
-      indent('IsConditional = ' + str(self.IsConditional)),
-      indent('IsListeningToChanges = ' + str(self.IsListeningToChanges)),
-      indent('IsListeningToChangesEval = ' + str(self.IsListeningToChangesEval)),
-      indent('CrossRuntime = ' + str(self.CrossRuntime)),
-      indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
+      #indent('DefaultValue = ' + str(self.DefaultValue)),
+      #indent('IsConditional = ' + str(self.IsConditional)),
+      #indent('IsListeningToChanges = ' + str(self.IsListeningToChanges)),
+      #indent('IsListeningToChangesEval = ' + str(self.IsListeningToChangesEval)),
+      #indent('CrossRuntime = ' + str(self.CrossRuntime)),
+      #indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
       indent('DataClass = ' + str(self.DataClass)),
       indent('InputType = ' + str(self.InputType)),
     '}'))
@@ -115,10 +117,10 @@ class ProcessOutputMetadata:
     assertfieldtype(self, 'OutputType')
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('OutputMetadata {',
       indent('Name = ' + str(self.Name)),
-      indent('ChangeTypeEval = ' + str(self.ChangeTypeEval)),
-      indent('ChangeType = ' + str(self.ChangeType)),
+      #indent('ChangeTypeEval = ' + str(self.ChangeTypeEval)),
+      #indent('ChangeType = ' + str(self.ChangeType)),
       indent('OutputType = ' + str(self.OutputType)),
       indent('DataClass = ' + str(self.DataClass)),
       indent('IsImplicit = ' + str(self.IsImplicit)),
@@ -135,7 +137,7 @@ class ProcessImpulseMetadata:
     assertfieldattributes(self,  [6, 38])
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('ImpulseMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('Type = ' + str(self.Type)),
     '}'))
@@ -152,7 +154,7 @@ class ProcessOperationMetadata:
     assertfieldattributes(self,  38)
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('OperationMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('IsSelf = ' + str(self.IsSelf)),
       indent('IsAsync = ' + str(self.IsAsync)),
@@ -169,7 +171,7 @@ class ProcessReferenceMetadata:
     assertfieldtype(self, 'ReferenceType')
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('ReferenceMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('ReferenceType = ' + str(self.ReferenceType)),
     '}'))
@@ -185,7 +187,7 @@ class ProcessGlobalRefMetadata:
     assertfieldtype(self, 'ValueType')
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('GlobalRefMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('ValueType = ' + str(self.ValueType)),
     '}'))
@@ -208,14 +210,14 @@ class ProcessInputListMetadata:
     assertfieldtype(self, 'TypeConstraint')
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('InputListMetadata {',
       indent('Name = ' + str(self.Name)),
-      indent('DefaultValue = ' + str(self.DefaultValue)),
-      indent('IsConditional = ' + str(self.IsConditional)),
-      indent('IsListeningToChanges = ' + str(self.IsListeningToChanges)),
-      indent('IsListeningToChangesEval = ' + str(self.IsListeningToChangesEval)),
-      indent('CrossRuntime = ' + str(self.CrossRuntime)),
-      indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
+      #indent('DefaultValue = ' + str(self.DefaultValue)),
+      #indent('IsConditional = ' + str(self.IsConditional)),
+      #indent('IsListeningToChanges = ' + str(self.IsListeningToChanges)),
+      #indent('IsListeningToChangesEval = ' + str(self.IsListeningToChangesEval)),
+      #indent('CrossRuntime = ' + str(self.CrossRuntime)),
+      #indent('IsPotentiallyListeningToChanges = ' + str(self.IsPotentiallyListeningToChanges)),
       indent('TypeConstraint = ' + str(self.TypeConstraint)),
       indent('DataClassConstraint = ' + str(self.DataClassConstraint)),
     '}'))
@@ -234,10 +236,10 @@ class ProcessOutputListMetadata:
     assertfieldtype(self, 'TypeConstraint')
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('OutputListMetadata {',
       indent('Name = ' + str(self.Name)),
-      indent('ChangeTypeEval = ' + str(self.ChangeTypeEval)),
-      indent('ChangeType = ' + str(self.ChangeType)),
+      #indent('ChangeTypeEval = ' + str(self.ChangeTypeEval)),
+      #indent('ChangeType = ' + str(self.ChangeType)),
       indent('TypeConstraint = ' + str(self.TypeConstraint)),
       indent('DataClassConstraint = ' + str(self.DataClassConstraint)),
     '}'))
@@ -253,7 +255,7 @@ class ProcessImpulseListMetadata:
     assertfieldattributes(self, 38)
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('ImpulseListMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('Type = ' + str(self.Type)),
     '}'))
@@ -270,7 +272,7 @@ class ProcessOperationListMetadata:
     assertfieldattributes(self, 38)
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('OperationListMetadata {',
       indent('Name = ' + str(self.Name)),
       indent('SupportsSync = ' + str(self.SupportsSync)),
       indent('SupportsAsync = ' + str(self.SupportsAsync)),
@@ -285,7 +287,7 @@ class ProcessGlobalRefListMetadata:
     assertfieldattributes(self, 38)
   
   def __str__(self):
-    return '\n'.join((' {',
+    return '\n'.join(('GlobalRefListMetadata {',
       indent('Name = ' + str(self.Name)),
     '}'))
 
