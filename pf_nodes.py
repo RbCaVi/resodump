@@ -122,7 +122,7 @@ class GenericNode(Node): # specifically one parameter generic
 def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, generics, context, extradata):
   if len(inputtypes) != len(nodeinputs):
     return None
-  if len(outputtypes) != len(nodeoutputs):
+  if len(outputtypes) != len(nodeoutputs) and len(outputtypes) != 0:
     return None
   if any(not it.contains(ni.typ) for it,ni in zip(inputtypes, nodeinputs)):
     return None
@@ -139,7 +139,7 @@ def specializegeneric(generictypename, generictypeconstraints, nodeinputs, nodeo
   generic = PfTypeRange(generictypeconstraints, []) # it's always a subtype of the type constraints
   if len(inputtypes) != len(nodeinputs):
     return None
-  if len(outputtypes) != len(nodeoutputs):
+  if len(outputtypes) != len(nodeoutputs) and len(outputtypes) != 0:
     return None
   for it,ni in zip(inputtypes, nodeinputs):
     if ni.typ.name == generictypename:
