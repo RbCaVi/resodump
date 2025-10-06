@@ -48,17 +48,93 @@
 # i'm trying to make better diagnostics this time
 # like showing where a type error came from instead of just saying there's a type error
 
+class CompileContext:
+  def __init__(self):
+    self.messages = []
+    self.tempmessages = []
+  
+  def addmessage(self, message):
+    self.messages.append(message)
+  
+  def addtempmessage(self, message):
+    self.tempmessages.append(message)
+
 class CompileStmt:
-  def __init__(self, stmt):
-    # assign basic properties
-    self.iin
-    self.vin
-    self.iout
-    self.vout
-    self.func # name, is builtin, tag (generic)
-    self.subblocks
-    # check each of the four connection sets that they are either empty or matching size with the definition
-    # also the subblock names
+  @staticmethod
+  def fromstmt(stmt, context):
+    self = CompileStmt()
+    self.source = stmt
+    self.iin = stmt.func.iin
+    self.vin = stmt.func.vin
+    self.iout = stmt.assign.iout
+    self.vout = stmt.assign.vout
+    self.funcname = stmt.func.name.name
+    self.funcisbuiltin = stmt.func.name.builtin
+    context.addmessage(['statement', self.funcname, self.funcisbuiltin, stmt.func.name])
+    self.generic = stmt.func.tag
+    self.subblocks = {}
+    self.subblockdatas = {}
+    for subblock in stmt.subblocks:
+      if subblock.label in self.subblocks:
+        context.addmessage(['duplicate subblock label', subblock, self.subblocks[subblock.label]])
+      else:
+        self.subblocks[subblock.label] = [CompileStmt.fromstmt(s, context) for s in subblock.stmts]
+        self.subblockdatas[subblock.label] = subblock
+    return self
+
+def visitstmts(path, stmts, beforestmts, afterstmts, beforestmt, afterstmt):
+  # path is a tuple
+  beforestmts(path, stmts)
+  for i,stmt in enumerate(stmts):
+    visitstmt(path + (i,), stmt, beforestmts, afterstmts, beforestmt, afterstmt)
+  afterstmts(path, stmts)
+
+def visitstmt(path, stmt, beforestmts, afterstmts, beforestmt, afterstmt):
+  beforestmt(path, stmt)
+  for name,stmts in stmt.subblocks.items():
+    visitstmts(path + (name,), stmts, beforestmts, afterstmts, beforestmt, afterstmt)
+  afterstmt(path, stmt)
+
+def nothing(path, s):
+  pass
+
+class CompileFunc:
+  @staticmethod
+  def new(argnames, retnames, stmts):
+    self = CompileFunc()
+    self.argnames = argnames
+    self.retnames = retnames
+    self.stmts = stmts
+    return self
+
+def extractfunctions(stmts, context):
+  funcs = {}
+  def afterstmts(path, stmts):
+    print([(stmt.funcname, stmt.funcisbuiltin) for stmt in stmts])
+    newfuncs = [stmt for stmt in stmts if (stmt.funcname, stmt.funcisbuiltin) == (('Function',), True)]
+    for newfunc in newfuncs:
+      if len(newfunc.iin) > 0:
+        context.addmessage(['function with impulse inputs', newfunc.iin])
+      if len(newfunc.iout) > 0:
+        context.addmessage(['function with impulse outputs', newfunc.iout])
+      if newfunc.generic is not None:
+        context.addmessage(['function with generic', newfunc.generic])
+      if any(v.kind != pft2.IDENT for v in newfunc.vin):
+        context.addmessage(['function with non identifier arguments', [v for v in newfunc.vin if v.kind != pft2.IDENT]])
+      argnames = [v.value for v in newfunc.vin if v.kind == pft2.IDENT]
+      retnames = [v.name for v in newfunc.vout]
+      if len(newfunc.subblocks) > 1:
+        context.addmessage(['function with multiple subblocks', newfunc])
+      funcname,fstmts = next(iter(newfunc.subblocks.items()))
+      if funcname in funcs:
+        context.addmessage(['duplicate function name', newfunc.subblocksdata[funcname], funcs[funcname]])
+      else:
+        funcs[funcname] = CompileFunc.new(argnames, retnames, fstmts)
+        context.addmessage(['function', funcname, funcs[funcname]])
+    stmts[:] = [stmt for stmt in stmts if (stmt.funcname, stmt.funcisbuiltin) != (('Function',), True)]
+  visitstmts((), stmts, nothing, afterstmts, nothing, nothing)
+  funcs['<MAIN>'] = CompileFunc.new([], [], stmts)
+  return funcs
 
 if __name__ == '__main__':
   import pft2
@@ -66,4 +142,14 @@ if __name__ == '__main__':
   with open('l.pft') as f:
     s = f.read()
   stmts = pft2.parse(s)
-  print(pft2.dumpstmts(stmts))
+  context = CompileContext()
+  stmts = [CompileStmt.fromstmt(s, context) for s in stmts]
+  funcs = extractfunctions(stmts, context)
+  
+  for message in context.messages:
+    print(message)
+  
+  print()
+  
+  for tempmessage in context.tempmessages:
+    print(tempmessage)
