@@ -121,13 +121,19 @@ class GenericNode(Node): # specifically one parameter generic
 
 def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, generics, context, extradata):
   if len(inputtypes) != len(nodeinputs):
+    context.addtempmessage(['wrong input count'])
     return None
   if len(outputtypes) != len(nodeoutputs) and len(outputtypes) != 0:
+    context.addtempmessage(['wrong output count'])
     return None
-  if any(not it.contains(ni.typ) for it,ni in zip(inputtypes, nodeinputs)):
-    return None
-  if any(not ot.contains(no.typ) for ot,no in zip(outputtypes, nodeoutputs)):
-    return None
+  for i,(it,ni) in enumerate(zip(inputtypes, nodeinputs)):
+    if not it.contains(ni.typ):
+      context.addtempmessage(['unmatched input type', i])
+      return None
+  for i,(ot,no) in enumerate(zip(outputtypes, nodeoutputs)):
+    if not ot.contains(no.typ):
+      context.addtempmessage(['unmatched output type', i])
+      return None
   return (
     extradata,
     [it.under(ni.typ) for it,ni in zip(inputtypes, nodeinputs)],
@@ -135,22 +141,45 @@ def specializeconcrete(nodeinputs, nodeoutputs, inputtypes, outputtypes, generic
   )
 
 def specializegeneric(generictypename, generictypeconstraints, nodeinputs, nodeoutputs, inputtypes, outputtypes, generics, context, extradata):
-  print(generictypename)
-  generic = PfTypeRange(generictypeconstraints, []) # it's always a subtype of the type constraints
   if len(inputtypes) != len(nodeinputs):
+    context.addtempmessage(['wrong input count'])
     return None
   if len(outputtypes) != len(nodeoutputs) and len(outputtypes) != 0:
+    context.addtempmessage(['wrong output count'])
     return None
-  for it,ni in zip(inputtypes, nodeinputs):
-    if ni.typ.name == generictypename:
-      generic = generic.over(it)
-    elif not it.contains(ni.typ):
-      return None
-  for ot,no in zip(outputtypes, nodeoutputs):
-    if no.typ.name == generictypename:
-      generic = generic.under(ot)
-    elif not ot.contains(no.typ):
-      return None
+  if generics is None: # no generic arguments
+    generic = PfTypeRange(generictypeconstraints, []) # it's always a subtype of the type constraints
+    for i,(it,ni) in enumerate(zip(inputtypes, nodeinputs)):
+      if ni.typ.name == generictypename:
+        generic = generic.over(it)
+      elif not it.contains(ni.typ):
+        context.addtempmessage(['unmatched input type', i])
+        return None
+    for i,(ot,no) in enumerate(zip(outputtypes, nodeoutputs)):
+      if no.typ.name == generictypename:
+        generic = generic.under(ot)
+      elif not ot.contains(no.typ):
+        context.addtempmessage(['unmatched output type', i])
+        return None
+  else: # one generic argument
+    typ = PfType(getdataclass(generics[0]), generics[0])
+    generic = PfTypeRange(generictypeconstraints + [typ], [typ]) # it's always a subtype of the type constraints
+    for i,(it,ni) in enumerate(zip(inputtypes, nodeinputs)):
+      if ni.typ.name == generictypename:
+        if not it.contains(typ):
+          context.addtempmessage(['unmatched generic input type', i])
+          return None
+      elif not it.contains(ni.typ):
+        context.addtempmessage(['unmatched input type', i])
+        return None
+    for i,(ot,no) in enumerate(zip(outputtypes, nodeoutputs)):
+      if no.typ.name == generictypename:
+        if not ot.contains(typ):
+          context.addtempmessage(['unmatched generic output type', i])
+          return None
+      elif not ot.contains(no.typ):
+        context.addtempmessage(['unmatched output type', i])
+        return None
   return (
     (generic, extradata),
     [it.under(ni.typ if ni.typ.name != generictypename else generic) for it,ni in zip(inputtypes, nodeinputs)],
@@ -189,6 +218,7 @@ class ConcreteFVariadicNode(ConcreteNode):
   def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes) - len(self.inputinfos)
     if variadiccount < 0:
+      context.addtempmessage(['not enough arguments'])
       return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
     return specializeconcrete(inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
@@ -277,6 +307,7 @@ class GenericFVariadicNode(GenericNode):
   def specialize(self, intypes, outtypes, generics, context):
     variadiccount = len(intypes) - len(self.inputinfos)
     if variadiccount < 0:
+      context.addtempmessage(['not enough arguments'])
       return None
     inputinfos = self.inputinfos + [self.inputsinfo for _ in range(variadiccount)]
     return specializegeneric(self.typeparamname, self.typeparamconstraints, inputinfos, self.outputinfos, intypes, outtypes, generics, context, variadiccount)
